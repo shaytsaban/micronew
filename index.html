@@ -47,6 +47,8 @@ h1 em{font-style:normal;color:#7fe3d6}
 .solutions .btn2 small{display:block;font-weight:500;font-size:13px;opacity:.9}
 @media (max-width:760px){.solutions{flex-direction:column}.solutions .btn2{margin-right:0;width:100%}}
 
+.lnote{margin-top:14px;background:#fff7e0;border-right:5px solid #f0b429;border-radius:10px;padding:11px 15px;font-size:15.5px;color:#4a4130}
+.lnote b{color:var(--ink)}
 /* lecture card */
 section.block{padding-top:46px}
 h2.sec{font-size:30px;font-weight:800;display:flex;gap:12px;align-items:center}
@@ -153,6 +155,7 @@ footer{margin-top:60px;background:var(--navy);color:#c8d4f2;padding:40px 0}
             <li><b>עלות שולית.</b> העלות של יחידה אחת, לפי שיפוע הקטע שבו היא נמצאת, בערך מוחלט.</li>
             <li><b>צורת העקומה.</b> עקומה ישרה: עלות שולית קבועה. עקומה קעורה: עלות שולית עולה.</li>
           </ul>
+          <div class="lnote"><b>הערה לגבי התכנים.</b> בשיעור עברנו על רוב הסוגיות לעומק, אבל סוגיית העלות השולית נסקרה בקצרה. מצופה מכם לבצע תרגול והרחבה עצמית שלה לקראת המפגש הבא, על בסיס המצגת וכן על בסיס התרגילים והפתרונות המלאים.</div>
         </div>
         <div>
           <h4>חומרי השיעור</h4>
@@ -177,7 +180,7 @@ footer{margin-top:60px;background:var(--navy);color:#c8d4f2;padding:40px 0}
       </div>
       <div class="rec" id="recording-1">
         <div class="recbox" id="recbox1">
-          <div class="recph"><div><div class="big">🎥</div><b>ההקלטה תתווסף כאן</b>הקישור להקלטת שיעור 1 יוזן לאחר השיעור.</div></div>
+          <div class="recph"><div><div class="big">🎥</div><b>ההקלטה תתווסף כאן</b></div></div>
         </div>
       </div>
     </article>
@@ -202,7 +205,7 @@ footer{margin-top:60px;background:var(--navy);color:#c8d4f2;padding:40px 0}
 <script>
 /* הקלטות: מזינים כאן את הקישור לכל שיעור. נתמכים קישורי YouTube, Vimeo, Google Drive וקישור הטמעה ישיר. */
 var RECORDINGS = {
-  "recbox1": ""   // הדביקו כאן את הקישור להקלטת שיעור 1
+  "recbox1": "https://youtu.be/1QQz9PzpYN0"   // הקלטת שיעור 1
 };
 function toEmbed(u){
   try{
