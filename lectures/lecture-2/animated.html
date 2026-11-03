@@ -1499,7 +1499,7 @@ slide({
     const chips = ids => h('div', { style: 'display:flex;flex-wrap:wrap;gap:5px' }, ids.map(sid => { const d = slides.find(z => z.id === sid); if (!d) return null; return ctx.static ? h('span.chip', 'שקף ' + num(sid)) : h('a.chip', { href: '#' + sid, title: d.title, onclick: ev => { ev.preventDefault(); Deck.go(sid); } }, num(sid) + '. ' + d.title); }));
     const plain = s => s.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
     const badge = () => h('span.l2-sub', 'להגשה');
-    root.appendChild(h('div.card.l2-subm', h('h3', { style: 'margin:0 0 4px' }, '📮 להגשה עד ' + '10.11.2026'), h('div', { html: SUBNOTE2 + ' שאר התרגילים לתרגול עצמי, ובחוברת פתרון מלא לכל אחד מהם. הפתרונות של תרגילי ההגשה יפורסמו אחרי מועד ההגשה.' })));
+    root.appendChild(h('div.card.l2-subm', h('h3', { style: 'margin:0 0 4px' }, '📮 להגשה עד ' + '10.11.2026'), h('div', { html: SUBNOTE2 + ' שאר התרגילים לתרגול עצמי. בחוברת יש פתרון מלא ומפורט לכל התרגילים, גם לתרגילי ההגשה. נסו לפתור לבד, ורק אחר כך בדקו בפתרון.' })));
     if (ctx.static) {
       root.appendChild(table(['תרגיל', 'נושא', 'שקפים'], EX2.map(e => [h('b', e.id + (e.sub ? ' (להגשה)' : '')), e.title, 'שקף ' + e.s.map(num).join(', ')])));
       root.appendChild(h('div', { style: 'margin-top:8px' }, table(['שאלה', 'סוג', 'שקפים'], CLASS_Q2.concat(HW_Q2, SUB_Q2).sort((a, b) => parseFloat(a.slice(2)) - parseFloat(b.slice(2))).map(q => [h('b', q), SUB_Q2.includes(q) ? 'להגשה' : CLASS_Q2.includes(q) ? 'בכיתה (חידון)' : 'לבית', 'שקף ' + Q2MAP[q].map(num).join(', ')]))));
