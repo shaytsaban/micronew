@@ -614,6 +614,8 @@ a.btn{display:inline-block;text-decoration:none;color:inherit}a.btn:hover{color:
 .l2-sub{display:inline-block;margin-inline-start:8px;background:var(--bad);color:#fff;border-radius:99px;padding:0 10px;font-size:13px;font-weight:800;vertical-align:1px}
 .hwc.sub{border-color:var(--bad);box-shadow:inset 0 0 0 1px var(--bad)}
 .l2-subm{border:2px solid var(--bad);background:#fff4f2}
+.l3-q{border:2px solid var(--x);background:#fff;padding:10px 14px}
+.l3-src{display:inline-block;font-size:13px;font-weight:800;color:#fff;background:var(--x);border-radius:99px;padding:1px 12px;margin-bottom:6px}
 </style></head>
 <body>
 <div id="app">
@@ -1197,6 +1199,124 @@ slide({
   }
 });
 
+/* ===== lesson 3 opening: the rule between marginal and average cost, through the homework questions ===== */
+function qcard(src, html) { return h('div.card.l3-q', h('div.l3-src', src), h('div', { html })); }
+function gbars(host, items) {
+  host.innerHTML = '';
+  items.forEach(it => host.appendChild(h('div.gc', h('div.gv', { style: it.c ? 'color:' + it.c : '' }, it.v === null ? '' : fmt(it.v)),
+    h('div.gb' + (it.nw ? '.new' : ''), { style: 'height:' + (it.v === null ? 0 : Math.max(4, (it.v - it.base) * it.k)) + 'px' + (it.c ? ';background:' + it.c : '') }), h('div.gn', it.n))));
+}
+
+slide({
+  id: 'rr1', kick: 'חיזוק: הכלל', kc: 'p', title: 'הכלל בין עלות שולית לעלות ממוצעת, דרך תרגיל 2.3', mantra: ['k2'],
+  build(root, ctx) {
+    const left = h('div.stack.l2-tight');
+    left.appendChild(qcard('חוברת, תרגיל 2.3, סעיפים א ו-ב', 'הממוצע של סטודנטית בארבעה מבחנים הוא 75. במבחן החמישי היא קיבלה 90. האם הממוצע שלה עלה? מהו הממוצע החדש? ומה היה קורה אילו קיבלה 75?'));
+    left.appendChild(rv(ask('לפני שמחשבים: 90 מעל הממוצע 75 או מתחתיו? מה יקרה לממוצע?', 'ענו בעל פה.'), 1));
+    left.appendChild(rv(L2.card('', 'שלב 1: הנוסחה הכללית', 'ממוצע חדש = הסכום הקודם ועוד הציון החדש, חלקי מספר המבחנים החדש: ' + m('AVG(5) = ' + F('SUM(4) + G(5)', '5')) + '<div class="l2-note">' + m('AVG') + ' ממוצע (Average). ' + m('SUM') + ' סך הנקודות (Sum). ' + m('G') + ' ציון (Grade).</div>'), 2));
+    left.appendChild(rv(L2.card('', 'שלב 2: הסכום הקודם', m('SUM(4) = 4 × 75 = 300') + '. זה סך כל הנקודות בארבעת המבחנים.'), 3));
+    const vis = h('div.stack.l2-tight');
+    const bars = h('div.l2-grade');
+    const msg = h('div.fb.nt');
+    vis.append(bars, msg);
+    vis.appendChild(rv(L2.card('ac', 'שלב 3: הממוצע החדש', m('AVG(5) = ' + F('300 + 90', '5') + ' = ' + F('390', '5') + ' = 78') + '. הממוצע <b>עלה</b> מ-75 ל-78, כי הציון החדש מעל הממוצע.'), 4));
+    vis.appendChild(rv(L2.card('x', 'סעיף ב: ציון חמישי 75', m('AVG(5) = ' + F('300 + 75', '5') + ' = 75') + '. הציון החדש שווה לממוצע, ולכן הממוצע <b>לא משתנה</b>.'), 5));
+    vis.appendChild(rv(h('div.l2-note', { html: 'טעות נפוצה: ' + m(F('75 + 90', '2') + ' = 82.5') + '. זה ממוצע של שני מספרים בלבד. ארבעת המבחנים הקודמים שוקלים פי ארבעה.' }), 5));
+    root.appendChild(h('div.cols', left, vis));
+    function draw(k) {
+      const g5 = k >= 5 ? 75 : 90;
+      gbars(bars, [{ n: 'ממוצע חדש', v: k >= 4 ? (k >= 5 ? 75 : 78) : null, base: 60, k: 4, c: 'var(--ac)' },
+        { n: 'מבחן 5', v: k >= 1 ? g5 : null, base: 60, k: 4, nw: true }, { n: 'ממוצע 4 מבחנים', v: 75, base: 60, k: 4 }]);
+      msg.innerHTML = k < 1 ? 'ממוצע של ארבעה מבחנים: 75.' : k < 4 ? 'המבחן החמישי, 90, מעל הממוצע.' : k < 5 ? 'הממוצע עלה ל-78: הוא זז לכיוון הציון החדש, אבל רק קצת.' : 'ציון ששווה לממוצע משאיר אותו במקום.';
+    }
+    draw(ctx.static ? 4 : 0);
+    ctx.onStep(k => draw(k));
+  }
+});
+
+slide({
+  id: 'rr2', kick: 'חיזוק: הכלל', kc: 'p', title: 'אותו כלל בייצור: תרגיל 2.3, סעיף ג', mantra: ['k1', 'k2'],
+  build(root, ctx) {
+    const left = h('div.stack.l2-tight');
+    left.appendChild(qcard('חוברת, תרגיל 2.3, סעיף ג', 'משק ייצר עד עכשיו 8 יחידות x, בעלות ממוצעת של 2 יחידות y ליחידה. היחידה התשיעית עולה 1.1 יחידות y. מה יקרה לעלות הממוצעת? מה היא תהיה?'));
+    const map = rv(L2.tbl(['בציונים', 'בייצור'], [['הציון במבחן החדש', '<t k="mc">עלות שולית</t> ' + m('MC') + ' (Marginal Cost): כמה עלתה היחידה החדשה'], ['הממוצע', '<t k="ac">עלות ממוצעת</t> ' + m('AC') + ' (Average Cost): הויתור הממוצע ליחידה'], ['סך הנקודות', '<t k="tc">עלות כוללת</t> ' + m('TC') + ' (Total Cost): כל הויתור עד עכשיו']]), 1);
+    left.appendChild(rv(ask('השולית 1.1, הממוצעת 2. מה יקרה לממוצעת?', 'ענו לפני החישוב.'), 2));
+    left.appendChild(rv(L2.card('', 'שלב 1: העלות הכוללת עד עכשיו', m('TC(8) = 8 × AC(8) = 8 × 2 = 16')), 3));
+    left.appendChild(rv(L2.card('ac', 'שלב 2: העלות הממוצעת החדשה', m('AC(9) = ' + F('TC(8) + MC(9)', '9') + ' = ' + F('16 + 1.1', '9') + ' = ' + F('17.1', '9') + ' = 1.9') + '. היא <b>ירדה</b>, כי ' + m('MC(9) = 1.1 < AC(8) = 2') + '.'), 4));
+    left.appendChild(rv(fmBox('ac', 'הכלל', 'אם ' + m('MC < AC') + ', העלות הממוצעת יורדת. אם ' + m('MC > AC') + ', היא עולה. אם ' + m('MC = AC') + ', היא לא משתנה. משווים לממוצעת <b>שלפני</b> היחידה החדשה.'), 5));
+    const T = Tryit({ head: 'נסו לבד: היחידה העשירית', q: 'אותו משק מייצר יחידה עשירית, והיא עולה 3 יחידות y. מהי העלות הממוצעת של 10 יחידות? האם היא עלתה או ירדה?',
+      hints: ['העלות הכוללת של 9 יחידות: ' + m('TC(9) = 17.1') + '.', m('AC(10) = ' + F('TC(9) + MC(10)', '10')) + '.'],
+      solution: () => h('div.stack', h('div', { html: 'שלב 1: ' + m('TC(9) = 9 × 1.9 = 17.1') }), h('div', { html: 'שלב 2: ' + m('AC(10) = ' + F('17.1 + 3', '10') + ' = ' + F('20.1', '10') + ' = 2.01') }),
+        h('div.l2-note', { html: 'השולית 3 מעל הממוצעת 1.9, ולכן הממוצעת עלתה, מ-1.9 ל-2.01.' })) });
+    T.labelled('ac10', m('AC(10)'), 2.01);
+    const right = h('div.stack', map, rv(T.el, 6));
+    right.appendChild(rv(qc(ctx, 'ובכיוון: מה קרה לעלות הממוצעת ביחידה העשירית?', [
+      { t: 'עלתה', ok: true, why: m('MC(10) = 3 > AC(9) = 1.9') + ', ולכן הממוצעת עולה.' },
+      { t: 'ירדה', why: 'יחידה יקרה מהממוצע מושכת אותו למעלה.' },
+      { t: 'לא השתנתה', why: 'היא לא שווה לממוצע, ולכן הממוצע משתנה.' }]), 6));
+    root.appendChild(h('div.cols', left, right));
+  }
+});
+
+slide({
+  id: 'rr3', kick: 'חיזוק: הכלל', kc: 'p', title: 'המלכודת: השולית עלתה, אז גם הממוצעת עולה?', mantra: ['k2'],
+  build(root, ctx) {
+    const MCv = [10, 6, 5, 7, 11, 15]; const TC = []; MCv.reduce((s, v, i) => (TC[i] = s + v), 0);
+    const left = h('div.stack.l2-tight');
+    left.appendChild(qcard('חוברת, תרגיל 2.2', 'העלויות השוליות של שש יחידות של מוצר הן 10, 6, 5, 7, 11 ו-15. השלימו עלות כוללת ועלות ממוצעת, וקבעו בכל שורה אם העלות הממוצעת עלתה, ירדה או לא השתנתה.'));
+    const rows = MCv.map((v, i) => {
+      const q = i + 1, ac = TC[i] / q, prev = i ? TC[i - 1] / i : null;
+      const dir = i === 0 ? '' : v < prev ? '<span class="bad-c">יורדת</span>' : v > prev ? '<span class="ok-c">עולה</span>' : '<b>לא משתנה</b>';
+      const cmp = i === 0 ? '' : m(v + (v < prev ? ' < ' : v > prev ? ' > ' : ' = ') + fmt(prev));
+      return { hl: q === 4, cells: [m(q), m(v), { v: m(TC[i]), s: q }, { v: m(fmt(ac)), s: q, sub: m(F(TC[i], q)) }, { v: cmp, s: q }, { v: dir, s: q }] };
+    });
+    left.appendChild(L2.tbl(['כמות', m('MC'), m('TC'), m('AC'), 'השולית מול הממוצעת שלפניה', 'הממוצעת'], rows));
+    const right = h('div.stack.l2-tight');
+    right.appendChild(rv(L2.card('x', 'שורה 3', 'השולית <b>ירדה</b> מ-6 ל-5, והממוצעת ירדה. עד כאן זה נראה כאילו הן זזות יחד.'), 3));
+    right.appendChild(rv(L2.card('mc', 'שורה 4', 'השולית <b>עלתה</b> מ-5 ל-7, אבל הממוצעת <b>לא זזה</b>: ' + m(F('21 + 7', '4') + ' = 7') + '. השולית 7 שווה לממוצעת 7 שלפניה.'), 4));
+    right.appendChild(rv(fmBox('ac', 'מה קובע', 'את הכיוון קובע <b>היחס</b> בין השולית לממוצעת שלפניה, לא הכיוון שבו השולית זזה.'), 7));
+    right.appendChild(rv(qc(ctx, 'חוברת, שאלה 2.16. העלות הממוצעת של x עלתה כשהמשק הוסיף יחידה אחת. מה בהכרח נכון?', [
+      { t: 'העלות השולית של היחידה הנוספת גבוהה מהעלות השולית של היחידה שלפניה', why: 'לא בהכרח. עלויות שוליות 2, 10, 8: הממוצעת עולה מ-6 ל-6.67, אף שהשולית ירדה מ-10 ל-8.' },
+      { t: 'העלות הכוללת ירדה', why: 'כשמוסיפים יחידה, העלות הכוללת לא יורדת.' },
+      { t: 'העלות השולית של היחידה הנוספת נמוכה מהעלות הממוצעת שלפניה', why: 'אז הממוצעת הייתה יורדת.' },
+      { t: 'העלות השולית של היחידה הנוספת גבוהה מהעלות הממוצעת שלפניה', ok: true, why: 'זה הכלל: יחידה יקרה מהממוצע מעלה אותו.' },
+      { t: 'העלות השולית של היחידה הנוספת שווה לעלות הממוצעת שלפניה', why: 'אז הממוצעת לא הייתה משתנה.' }]), 8));
+    root.appendChild(h('div.cols', left, right));
+  }
+});
+
+slide({
+  id: 'rr4', kick: 'חיזוק: הכלל', kc: 'p', title: 'הכלל על עקומת תמורה: תרגיל 2.4, סעיף ה', mantra: ['k2', 'm5'],
+  build(root, ctx) {
+    const P = [[0, 80], [20, 70], [40, 40], [50, 0]], L = ['A', 'B', 'C', 'D'];
+    const left = h('div.stack.l2-tight');
+    left.appendChild(qcard('חוברת, תרגיל 2.4, סעיף ה', 'משק מייצר חיטה (x) ותירס (y), באלפי טונות. עקומת התמורה עוברת דרך ' + m('A(0, 80)') + ', ' + m('B(20, 70)') + ', ' + m('C(40, 40)') + ' ו-' + m('D(50, 0)') + ', ומחוברת בקווים ישרים. מה קורה לעלות הממוצעת של חיטה כשהמשק עובר מ-B ל-D? הסבירו לפי הכלל.'));
+    const rows = [
+      ['AB', { v: m('0.5'), s: 2, sub: m(F('80 − 70', '20')) }, { v: 'אין', s: 2 }, { v: m('0.5'), s: 2, sub: m(F('10', '20')) }, { v: 'הקטע הראשון', s: 2 }],
+      ['BC', { v: m('1.5'), s: 3, sub: m(F('70 − 40', '20')) }, { v: m('0.5'), s: 3 }, { v: m('1'), s: 3, sub: m(F('40', '40')) }, { v: m('1.5 > 0.5') + ', <span class="ok-c">עולה</span>', s: 3 }],
+      ['CD', { v: m('4'), s: 4, sub: m(F('40 − 0', '10')) }, { v: m('1'), s: 4 }, { v: m('1.6'), s: 4, sub: m(F('80', '50')) }, { v: m('4 > 1') + ', <span class="ok-c">עולה</span>', s: 4 }]];
+    left.appendChild(rv(L2.tbl(['קטע', m('MC(x)') + ', השיפוע', m('AC(x)') + ' לפני הקטע', m('AC(x)') + ' בסוף הקטע', 'השוואה'], rows), 2));
+    left.appendChild(rv(L2.card('ok', 'תשובה', 'הממוצעת עולה: 0.5, 1, 1.6. בעקומה <t k="concave">קעורה</t> כל קטע תלול מקודמו, ולכן השולית בכל קטע גבוהה מהממוצעת שלפניו.'), 5));
+    left.appendChild(rv(qc(ctx, 'חוברת, שאלה 2.17. עקומת התמורה של משק היא קו ישר. מה קורה לעלות הממוצעת של x ככל שמייצרים יותר x?', [
+      { t: 'היא עולה', why: 'היא עולה רק אם השולית מעליה. בקו ישר השולית קבועה ושווה לה.' },
+      { t: 'היא לא משתנה, ושווה לעלות השולית', ok: true, why: 'כל היחידות עולות אותו דבר, השיפוע. לכן הממוצע שלהן שווה לשיפוע ולא משתנה.' },
+      { t: 'היא יורדת', why: 'היא יורדת רק אם השולית מתחתיה.' },
+      { t: 'היא לא משתנה, וגבוהה מהעלות השולית', why: 'אם כל היחידות עולות אותו דבר, הממוצע שווה לעלות של כל אחת.' }]), 6));
+    const host = h('div');
+    root.appendChild(h('div.cols', left, host));
+    const ch = PPC.chart(host, { w: 520, h: 400, xmax: 58, ymax: 90, xLabel: 'חיטה (x)', yLabel: 'תירס (y)', ticksX: [20, 40, 50], ticksY: [40, 70, 80] });
+    function draw(k, anim) {
+      ['curve', 'pts', 'ann'].forEach(c => ch.clear(c));
+      if (k >= 1) { ch.curve(P, { animate: anim && k === 1 }); P.forEach((p, i) => ch.dot(p[0], p[1], { cls: 'gold', label: L[i], r: 6 })); }
+      if (k >= 3) ch.vBracket(40, 40, 70, '30', 'y', 1);
+      if (k >= 4) ch.vBracket(50, 0, 40, '40', 'y', 1);
+    }
+    draw(ctx.static ? 9 : 0, false);
+    ctx.onStep((k, dir, init) => draw(k, !init && dir > 0));
+  }
+});
+
+/* ===== lesson 3 map ===== */
 slide({
   id: 'goals', kick: 'מפת השיעור', kc: 't', title: 'מה תדעו לעשות בסוף השיעור', steps: 0,
   build(root, ctx) {
@@ -1645,6 +1765,7 @@ slide({
 
 /* glossary: terms taught in lesson 2 point to the recap slide */
 ['ppc', 'combo', 'efficient', 'tc', 'ac', 'mc', 'delta', 'slope', 'avgrule', 'mcy'].forEach(k => { if (GLOSS[k]) GLOSS[k].slide = 'r3'; });
+if (GLOSS.avgrule) GLOSS.avgrule.slide = 'rr2';
 
 
 document.addEventListener('DOMContentLoaded',function(){Deck.init({title:"שיעור 3: בניית עקומת התמורה מנתוני עובדים"});});
