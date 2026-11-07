@@ -616,6 +616,7 @@ a.btn{display:inline-block;text-decoration:none;color:inherit}a.btn:hover{color:
 .l2-subm{border:2px solid var(--bad);background:#fff4f2}
 .l3-q{border:2px solid var(--x);background:#fff;padding:10px 14px}
 .l3-src{display:inline-block;font-size:13px;font-weight:800;color:#fff;background:var(--x);border-radius:99px;padding:1px 12px;margin-bottom:6px}
+.l3-why{margin-bottom:12px;font-size:clamp(17px,1.6vw,20px);padding:10px 16px}
 </style></head>
 <body>
 <div id="app">
@@ -1222,6 +1223,7 @@ slide({
     vis.appendChild(rv(L2.card('ac', 'שלב 3: הממוצע החדש', m('AVG(5) = ' + F('300 + 90', '5') + ' = ' + F('390', '5') + ' = 78') + '. הממוצע <b>עלה</b> מ-75 ל-78, כי הציון החדש מעל הממוצע.'), 4));
     vis.appendChild(rv(L2.card('x', 'סעיף ב: ציון חמישי 75', m('AVG(5) = ' + F('300 + 75', '5') + ' = 75') + '. הציון החדש שווה לממוצע, ולכן הממוצע <b>לא משתנה</b>.'), 5));
     vis.appendChild(rv(h('div.l2-note', { html: 'טעות נפוצה: ' + m(F('75 + 90', '2') + ' = 82.5') + '. זה ממוצע של שני מספרים בלבד. ארבעת המבחנים הקודמים שוקלים פי ארבעה.' }), 5));
+    root.appendChild(h('div.card.y.l3-why', { html: 'בשיעור הקודם ביטאתם קושי מסוים, שעלה מאי הצגה מפורשת של הקשר בין סוגי העלויות, השולית והממוצעת, ושל השינויים בערכן. <b>נפתח בזה ונחזק, ואז נמשיך הלאה.</b>' }));
     root.appendChild(h('div.cols', left, vis));
     function draw(k) {
       const g5 = k >= 5 ? 75 : 90;
