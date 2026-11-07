@@ -1331,6 +1331,7 @@ slide({
     const grid = h('div.hwg');
     goals.forEach((g, i) => grid.appendChild(h('div.card' + (i < 3 ? '.x' : '.mc'), h('h3', (i + 1) + '.'), h('div', g[0]), h('div', { style: 'margin-top:8px' }, h('a.chip', { href: '#' + g[1], onclick: e => { e.preventDefault(); Deck.go(g[1]); } }, 'לשקף')))));
     root.appendChild(h('p.lead', 'מאיפה באה עקומת התמורה: בונים אותה מנתוני העובדים, ואז מחשבים עליה עלויות כמו בשיעור הקודם.'));
+    root.appendChild(h('div.card.ac', { style: 'margin-bottom:12px' }, h('div', { html: '<b>פתחנו בחיזוק:</b> הכלל בין עלות שולית לעלות ממוצעת, דרך תרגילים 2.2, 2.3, 2.4 ושאלות 2.16, 2.17 מהחוברת. בכל עקומה שנבנה היום נשאל מה קורה לעלות הממוצעת.' }), h('div', { style: 'margin-top:6px' }, h('a.chip', { href: '#rr1', onclick: e => { e.preventDefault(); Deck.go('rr1'); } }, 'חזרה לפתיחה'))));
     root.appendChild(grid);
   }
 });
@@ -1699,7 +1700,7 @@ const EX3 = [
   { id: '3.7', title: 'מי מייצר מה בנקודה יעילה', s: ['w4'] },
   { id: '3.8', title: 'תרגיל מסכם: עובדים, עלויות ובדיקת צירופים', s: ['h1', 'h1b', 'h3', 'h5', 'r1'] }
 ];
-const Q3MAP = { '3.9': ['w2'], '3.10': ['w5', 'h2'], '3.11': ['w2', 'w3'], '3.12': ['w4'], '3.13': ['w3', 'w4'], '3.14': ['c5', 'h5'], '3.15': ['f1', 'h4'], '3.16': ['w5', 'h2'], '3.17': ['f1'], '3.18': ['h3', 'c1'], '3.19': ['w4', 'c3'], '3.20': ['c2', 'f1'] };
+const Q3MAP = { '3.9': ['w2'], '3.10': ['w5', 'h2'], '3.11': ['w2', 'w3'], '3.12': ['w4'], '3.13': ['w3', 'w4'], '3.14': ['c5', 'h5'], '3.15': ['f1', 'h4'], '3.16': ['w5', 'h2'], '3.17': ['f1'], '3.18': ['h3', 'rr2'], '3.19': ['w4', 'rr4'], '3.20': ['c2', 'f1'] };
 const CLASS_Q3 = ['3.9', '3.10', '3.13', '3.15', '3.17', '3.19'], HW_Q3 = ['3.11', '3.12', '3.14', '3.16', '3.18', '3.20'];
 
 /* ---- quiz ---- */
@@ -1741,8 +1742,8 @@ slide({
     const chips = ids => h('div', { style: 'display:flex;flex-wrap:wrap;gap:5px' }, ids.map(sid => { const d = slides.find(z => z.id === sid); if (!d) return null; return ctx.static ? h('span.chip', 'שקף ' + num(sid)) : h('a.chip', { href: '#' + sid, title: d.title, onclick: ev => { ev.preventDefault(); Deck.go(sid); } }, num(sid) + '. ' + d.title); }));
     const plain = s => s.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
     if (ctx.static) {
-      root.appendChild(table(['תרגיל', 'נושא', 'שקפים'], EX3.map(e => [h('b', e.id), e.title, 'שקף ' + e.s.map(num).join(', ')])));
-      root.appendChild(h('div', { style: 'margin-top:8px' }, table(['שאלה', 'שקפים', 'שאלה', 'שקפים'], CLASS_Q3.map((q, i) => [h('b', q + ' (כיתה)'), 'שקף ' + Q3MAP[q].map(num).join(', '), h('b', HW_Q3[i] + ' (בית)'), 'שקף ' + Q3MAP[HW_Q3[i]].map(num).join(', ')]))));
+      root.appendChild(table(['תרגיל', 'נושא', 'שקפים'], [[h('b', '2.2, 2.3, 2.4, 2.16, 2.17'), 'פתיחה: חזרה על הכלל משיעור 2', 'שקף ' + ['rr1', 'rr2', 'rr3', 'rr4'].map(num).join(', ')]].concat(EX3.map(e => [h('b', e.id), e.title, 'שקף ' + e.s.filter(num).map(num).join(', ')]))));
+      root.appendChild(h('div', { style: 'margin-top:8px' }, table(['שאלה', 'שקפים', 'שאלה', 'שקפים'], CLASS_Q3.map((q, i) => [h('b', q + ' (כיתה)'), 'שקף ' + Q3MAP[q].filter(num).map(num).join(', '), h('b', HW_Q3[i] + ' (בית)'), 'שקף ' + Q3MAP[HW_Q3[i]].filter(num).map(num).join(', ')]))));
       return;
     }
     const g1 = h('div.hwg'); EX3.forEach(e => g1.appendChild(h('div.hwc', { 'data-key': e.id }, h('b', `תרגיל ${e.id}: ${e.title}`), h('div.go', chips(e.s)))));
@@ -1758,8 +1759,10 @@ slide({
       }
       g2.appendChild(card);
     });
-    root.append(h('h3', { style: 'margin:0 0 6px' }, 'תרגילים 3.1 עד 3.8'), g1, h('h3', { style: 'margin:12px 0 6px' }, 'שאלות אמריקאיות 3.9 עד 3.20'), g2,
-      h('div.card.ok', { style: 'margin-top:12px' }, h('b', 'חוברת תרגילי הבית'), h('div', { style: 'margin-top:6px' }, h('a.btn', { href: '../../materials/homework-booklet.pdf?v=20261103b', target: '_blank', rel: 'noopener' }, 'חוברת תרגילי הבית עם הפתרונות (PDF)'))));
+    const RR = [['2.3, סעיפים א ו-ב', 'ממוצע ציונים: ציון מעל הממוצע מעלה אותו', ['rr1']], ['2.3, סעיף ג', 'אותו כלל בייצור', ['rr2']], ['2.2 ושאלה 2.16', 'השולית עלתה, והממוצעת לא זזה', ['rr3']], ['2.4 סעיף ה ושאלה 2.17', 'הכלל על עקומה קעורה ועל קו ישר', ['rr4']]];
+    const g0 = h('div.hwg'); RR.forEach(r => g0.appendChild(h('div.hwc', h('b', 'חזרה: ' + r[0]), h('div.tp', r[1]), h('div.go', chips(r[2])))));
+    root.append(h('h3', { style: 'margin:0 0 6px' }, 'פתיחה: חזרה על הכלל משיעור 2'), g0, h('h3', { style: 'margin:12px 0 6px' }, 'תרגילים 3.1 עד 3.8'), g1, h('h3', { style: 'margin:12px 0 6px' }, 'שאלות אמריקאיות 3.9 עד 3.20'), g2,
+      h('div.card.ok', { style: 'margin-top:12px' }, h('b', 'חוברת תרגילי הבית'), h('div', { style: 'margin-top:6px' }, h('a.btn', { href: '../../materials/homework-booklet.pdf?v=20261107', target: '_blank', rel: 'noopener' }, 'חוברת תרגילי הבית עם הפתרונות (PDF)'))));
   }
 });
 
