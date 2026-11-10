@@ -1255,17 +1255,26 @@ function memeCard(art, top, bottom) { return h('div.mmc', h('div.mmt', top), h('
   }, true);
 })();
 
+/* question card and grade bars (lesson 3 onward) */
+function qcard(src, html) { return h('div.card.l3-q', h('div.l3-src', src), h('div', { html })); }
+function gbars(host, items) {
+  host.innerHTML = '';
+  items.forEach(it => host.appendChild(h('div.gc', h('div.gv', { style: it.c ? 'color:' + it.c : '' }, it.v === null ? '' : fmt(it.v)),
+    h('div.gb' + (it.nw ? '.new' : ''), { style: 'height:' + (it.v === null ? 0 : Math.max(4, (it.v - it.base) * it.k)) + 'px' + (it.c ? ';background:' + it.c : '') }), h('div.gn', it.n))));
+}
+
+
 /* ===== lesson 3 cover ===== */
 slide({
   id: 'cover', kick: '', title: 'שיעור 3: בונים את עקומת התמורה מנתוני העובדים', steps: 0,
   build(root, ctx) {
     ctx.container.classList.add('cv');
     const pg = ctx.container.parentElement; if (pg && pg.classList.contains('pslide')) pg.classList.add('cv');
-    const chips = ['📮 איפה מגישים', '🔁 חיזוק: שולית מול ממוצעת', '👷 עלות שולית של עובדת', '🪜 בנייה בארבעה שלבים', '⚖️ יתרון יחסי ויתרון מוחלט', '📐 עלויות על העקומה שנבנתה', '🎯 חידון: שש שאלות'];
+    const chips = ['📮 איפה מגישים', '🔁 חיזוק: שולית מול ממוצעת', '👷 עלות שולית של עובדת', '🪜 בנייה בארבעה שלבים', '📐 שרטוט העקומה', '🧩 שתי דוגמאות עם פתרון מלא', '🎯 חידון: ארבע שאלות'];
     root.appendChild(h('div.cvw', h('div.orb.o1'), h('div.orb.o2'), h('div.orb.o3'),
       h('div.kl', 'מבוא למיקרו כלכלה · שיעור 3 · 10.11.2026'),
       h('h1', 'בונים את עקומת התמורה', h('span.ac', 'מנתוני העובדים')),
-      h('div.st', 'פותחים בחיזוק הכלל בין עלות שולית לעלות ממוצעת. אחר כך בונים עקומה בארבעה שלבים: עלות שולית של כל עובדת, דירוג, יתרון יחסי ושרטוט.'),
+      h('div.st', 'פותחים בחיזוק הכלל בין עלות שולית לעלות ממוצעת. אחר כך בונים עקומה בארבעה שלבים: נקודות קצה, עלות שולית של כל עובדת, דירוג ושרטוט.'),
       h('div.chips', chips.map(c => h('span', c))),
       h('div.tw', h('div.mmt', { style: 'color:#fff' }, 'כשהשולית מעל הממוצעת'), h('div', { html: '<svg viewBox="0 0 160 160" aria-hidden="true">' + ART.party + '</svg>' }), h('div.mmb', 'הממוצעת: אני בדרך למעלה')),
       h('div.ft', { html: '<b>ד״ר שי צבאן</b> · המרכז האקדמי רופין · סמסטר א׳ תשפ״ז' })));
@@ -1278,10 +1287,10 @@ slide({
   build(root, ctx) {
     const right = h('div.stack.l2-tight');
     right.appendChild(rv(L2.card('x', '1. איפה מתפרסמות ההנחיות', 'באתר הקורס, בכרטיס של כל שיעור, בתיבה הצהובה <b>״להגשה״</b> (מסומנת באדום בצילום המסך). שם כתוב מה מגישים ועד מתי. אותם תרגילים מסומנים <b>״להגשה״</b> גם בחוברת התרגילים.<div class="l2-note" style="margin-top:4px">shaytsaban.github.io/micronew</div>'), 1));
-    right.appendChild(rv(L2.card('tc', '2. לאן מגישים', 'במודל הכללי של הקורס, <b>בתיבת ההגשה שלי, באזור שלי, שנמצא הכי למעלה</b> בעמוד הקורס. לא באזור של מר שלומי כץ.'), 2));
+    right.appendChild(rv(L2.card('tc', '2. לאן מגישים', 'במודל בלבד, <b>ורק בחלק העליון שלו, תחת הכותרת ״שי צבאן״</b>. הגשה במקום אחר במודל תגיע רק למר שלומי כץ, ולא אליי.'), 2));
     right.appendChild(rv(L2.card('ok', '3. ההגשה של שיעור 2', 'תרגילים 2.6 ו-2.7, ושאלות אמריקאיות 2.18 עד 2.22 מהחוברת, עד ' + m('10.11.2026') + '.'), 3));
-    right.appendChild(rv(h('div.card.y', { html: '<b>הפעם:</b> מי שהגיש מטלה שגויה, ההגשה שלו תתקבל, כל עוד היא הוגשה לתיבה שלי, באזור שלי במודל (הכי למעלה), ולא לאזור של מר שלומי כץ.' }), 4));
-    right.appendChild(rv(memeCard('owl', 'ההנחיות: באתר', 'ההגשה: במודל, בתיבה שלי'), 4));
+    right.appendChild(rv(h('div.card.y', { html: '<b>הפעם:</b> מי שהגיש את תרגילי שיעור 2 במקום הלא נכון, מוזמן להגיש אותם עכשיו במקום הנכון. זה בסדר, למרות האיחור הקל. גם מי שהגיש מטלה שגויה לתיבה שלי, ההגשה שלו תתקבל.' }), 4));
+    right.appendChild(rv(memeCard('owl', 'ההנחיות: באתר', 'ההגשה: במודל, תחת ״שי צבאן״'), 4));
     const img = h('img', { src: 'img/submit-site.png', alt: 'צילום מסך מאתר הקורס: כרטיס שיעור 2, ותיבת ההגשה מסומנת באדום', style: 'width:100%;border:1px solid var(--line);border-radius:12px;display:block' });
     const left = h('div.stack', rv(img, 1), rv(h('div.l2-note', 'צילום מסך מאתר הקורס, כרטיס שיעור 2. ההנחיות להגשה מסומנות באדום.'), 1));
     root.prepend(h('p.lead', 'שתי שאלות שעלו: איפה כתוב מה להגיש, ולאן מגישים. התשובה בארבעה צעדים.'));
@@ -1294,7 +1303,7 @@ slide({
   id: 'r3', kick: 'חזרה', kc: 't', title: 'חזרה על שיעור 2: עלות שולית ועלות ממוצעת', mantra: ['k1', 'k2'],
   build(root, ctx) {
     const left = h('div.stack.l2-tight');
-    left.appendChild(rv(L2.card('tc', 'שלוש עלויות', m('TC(x) = Ymax − Y') + ' &nbsp; ' + m('AC(x) = ' + F('TC(x)', 'X')) + ' &nbsp; ' + m('MC(x) = ' + F('ΔTC(x)', 'ΔX'))), 1));
+    left.appendChild(rv(L2.card('tc', 'שלוש עלויות', m('TC(x) = Ymax − Y') + ' &nbsp; ' + m('AC(x) = ' + F('TC(x)', 'X')) + ' &nbsp; ' + m('MC(x) = ' + F('ΔTC(x)', 'ΔX') + ' = ' + F('|Y2 − Y1|', 'X2 − X1')) + '<div class="l2-note" style="margin-top:4px">' + m('ΔTC(x)') + ' הוא כמה y ויתרנו בין שתי הנקודות, ' + m('|Y2 − Y1|') + '. ' + m('ΔX') + ' הוא כמה x הוספנו, ' + m('X2 − X1') + '.</div>'), 1));
     left.appendChild(rv(L2.card('ac', 'הכלל', 'יחידה חדשה זולה מהממוצע מורידה אותו. יחידה יקרה ממנו מעלה אותו. כשהן שוות, הממוצע לא משתנה.'), 2));
     left.appendChild(rv(L2.card('mc', 'על עקומה', 'עלות שולית של x היא שיפוע הקטע, ושל y ההופכי שלו. בנקודת שבר: x לפי הקטע משמאל, y לפי הקטע מימין.'), 3));
     const right = h('div.stack');
@@ -1313,14 +1322,39 @@ slide({
   }
 });
 
-/* ===== lesson 3 opening: the rule between marginal and average cost, through the homework questions ===== */
-function qcard(src, html) { return h('div.card.l3-q', h('div.l3-src', src), h('div', { html })); }
-function gbars(host, items) {
-  host.innerHTML = '';
-  items.forEach(it => host.appendChild(h('div.gc', h('div.gv', { style: it.c ? 'color:' + it.c : '' }, it.v === null ? '' : fmt(it.v)),
-    h('div.gb' + (it.nw ? '.new' : ''), { style: 'height:' + (it.v === null ? 0 : Math.max(4, (it.v - it.base) * it.k)) + 'px' + (it.c ? ';background:' + it.c : '') }), h('div.gn', it.n))));
-}
+/* ===== graphical solution of the recap question, click by click ===== */
+slide({
+  id: 'r3g', kick: 'חזרה · פתרון גרפי', kc: 't', title: 'עלות שולית מנתוני נקודות: הפתרון בגרף', mantra: ['m5'],
+  build(root, ctx) {
+    const P = [[0, 30], [10, 25], [20, 10]], L = ['A', 'B', 'C'];
+    const left = h('div.stack.l2-tight');
+    left.appendChild(qcard('השאלה מהשקף הקודם', 'עקומה עוברת דרך ' + m('A(0, 30)') + ', ' + m('B(10, 25)') + ' ו-' + m('C(20, 10)') + ', ומחוברת בקווים ישרים. מהי העלות השולית של היחידה העשירית של x?'));
+    left.appendChild(rv(L2.card('', 'צעד 1: מסמנים את הנקודות', 'שלוש נקודות על העקומה, ומחברים אותן בקווים ישרים.'), 1));
+    left.appendChild(rv(L2.card('x', 'צעד 2: באיזה קטע היחידה העשירית?', 'היחידה העשירית היא המעבר מ-' + m('x = 9') + ' ל-' + m('x = 10') + '. היא נוספת בדרך מ-A ל-B, ולכן בקטע AB, שמשמאל לנקודה B.'), 2));
+    left.appendChild(rv(L2.card('', 'צעד 3: כמה x הוספנו?', m('ΔX = X2 − X1 = 10 − 0 = 10') + ' (החץ האופקי).'), 3));
+    left.appendChild(rv(L2.card('tc', 'צעד 4: כמה y ויתרנו?', m('|Y2 − Y1| = |25 − 30| = 5') + ' (החץ האנכי). זה ' + m('ΔTC(x)') + ': העלות של 10 היחידות האלה.'), 4));
+    left.appendChild(rv(L2.card('mc', 'צעד 5: השיפוע הוא העלות השולית', m('MC(x) = ' + F('|Y2 − Y1|', 'X2 − X1') + ' = ' + F('5', '10') + ' = 0.5') + '. כל יחידת x בקטע AB, גם העשירית, עולה חצי יחידת y.'), 5));
+    left.appendChild(rv(L2.card('y', 'ולשם השוואה: היחידה ה-11', 'היא כבר בקטע BC: ' + m(F('|10 − 25|', '20 − 10') + ' = 1.5') + '. הקטע תלול יותר, ולכן היחידה יקרה יותר.'), 6));
+    const host = h('div');
+    const right = h('div.stack', host, rv(h('div', { style: 'display:flex;justify-content:center' }, memeCard('owl', 'שאלו מספר? ציירו קטע', 'השיפוע עונה לבד')), 6));
+    root.appendChild(h('div.cols', left, right));
+    const ch = PPC.chart(host, { w: 540, h: 400, xmax: 23, ymax: 34, xLabel: 'x', yLabel: 'y', ticksX: [10, 20], ticksY: [10, 25, 30] });
+    function draw(k, anim) {
+      ['curve', 'pts', 'ann'].forEach(c => ch.clear(c));
+      if (k >= 2) ch.curve(P, { animate: anim && k === 2 });
+      if (k >= 1) P.forEach((p, i) => ch.dot(p[0], p[1], { cls: 'gold', label: L[i] + ' (' + p[0] + ', ' + p[1] + ')', r: 6, pos: i === 1 ? 'se' : 'ne' }));
+      if (k >= 2) PPC.el('path', { class: 'seg-hl', d: `M${ch.sx(0)},${ch.sy(30)} L${ch.sx(10)},${ch.sy(25)}` }, ch.layer('ann'));
+      if (k >= 3) { ch.line(0, 30, 10, 30, 'guide x'); ch.hBracket(31.6, 0, 10, 'ΔX = 10', 'x', -1); }
+      if (k >= 4) { ch.line(10, 30, 10, 25, 'guide y'); ch.vBracket(10, 30, 25, '5', 'tc', -1); }
+      if (k >= 6) { PPC.el('path', { class: 'seg-hl', d: `M${ch.sx(10)},${ch.sy(25)} L${ch.sx(20)},${ch.sy(10)}`, style: 'stroke:var(--y);opacity:.55' }, ch.layer('ann')); ch.text(16.2, 19, '1.5', 'bl', 'start').setAttribute('style', 'fill:var(--mc);font-weight:700'); }
+      if (k >= 5) ch.text(4.2, 26.2, '0.5', 'bl', 'middle').setAttribute('style', 'fill:var(--mc);font-weight:800');
+    }
+    draw(ctx.static ? 9 : 0, false);
+    ctx.onStep((k, dir, init) => draw(k, !init && dir > 0));
+  }
+});
 
+/* ===== lesson 3 opening: the rule between marginal and average cost, through the homework questions ===== */
 slide({
   id: 'rr1', kick: 'חיזוק: הכלל', kc: 'p', title: 'הכלל בין עלות שולית לעלות ממוצעת, דרך תרגיל 2.3', mantra: ['k2'],
   build(root, ctx) {
@@ -1437,16 +1471,16 @@ slide({
   id: 'goals', kick: 'מפת השיעור', kc: 't', title: 'מה תדעו לעשות בסוף השיעור', steps: 0,
   build(root, ctx) {
     const goals = [
+      ['למצוא את נקודות הקצה מטבלת עובדים', 'w1'],
       ['לחשב לכל עובד עלות שולית בייצור x ובייצור y', 'w2'],
-      ['לבנות עקומת תמורה מטבלת עובדים, בארבעה שלבים', 'w1'],
-      ['להבחין בין יתרון יחסי ליתרון מוחלט', 'w5'],
-      ['לחשב עלויות על עקומה שנבנתה, בנקודת שבר ובין נקודות', 'h3'],
-      ['לקשר את העלות השולית בקטע לעובד שמייצר בו', 'h3'],
-      ['לקבוע עלות שולית משמאל ומימין לנקודה', 'f1']
+      ['לדרג את העובדים לפי העלות השולית, ולא לפי הכמות', 'w3'],
+      ['לשרטט את העקומה, עובד אחר עובד', 'w4'],
+      ['לזהות איזה עובד עבר בכל קטע, ולמה השיפועים גדלים', 'w4'],
+      ['לתרגל בשתי דוגמאות נוספות, עם פתרון מלא', 'exga']
     ];
     const grid = h('div.hwg');
     goals.forEach((g, i) => grid.appendChild(h('div.card' + (i < 3 ? '.x' : '.mc'), h('h3', (i + 1) + '.'), h('div', g[0]), h('div', { style: 'margin-top:8px' }, h('a.chip', { href: '#' + g[1], onclick: e => { e.preventDefault(); Deck.go(g[1]); } }, 'לשקף')))));
-    root.appendChild(h('p.lead', 'מאיפה באה עקומת התמורה: בונים אותה מנתוני העובדים, ואז מחשבים עליה עלויות כמו בשיעור הקודם.'));
+    root.appendChild(h('p.lead', 'מאיפה באה עקומת התמורה: בונים אותה מנתוני העובדים, בארבעה שלבים.'));
     root.appendChild(h('div.card.ac', { style: 'margin-bottom:12px' }, h('div', { html: '<b>פתחנו בחיזוק:</b> הכלל בין עלות שולית לעלות ממוצעת, דרך תרגילים 2.2, 2.3, 2.4 ושאלות 2.16, 2.17 מהחוברת. בכל עקומה שנבנה היום נשאל מה קורה לעלות הממוצעת.' }), h('div', { style: 'margin-top:6px' }, h('a.chip', { href: '#rr1', onclick: e => { e.preventDefault(); Deck.go('rr1'); } }, 'חזרה לפתיחה'))));
     root.appendChild(grid);
   }
@@ -1568,274 +1602,135 @@ slide({
   }
 });
 
-slide({
-  id: 'w5', kick: 'מושגים', kc: 'y', title: 'יתרון יחסי ויתרון מוחלט', mantra: ['k4'],
-  build(root, ctx) {
-    const left = h('div.stack.l2-tight');
-    left.appendChild(rv(L2.card('', '<t k="abs">יתרון מוחלט</t>: מי מייצר הכי הרבה', 'במשק ״נעמי״: בלאפות, עובדת ד (8). בשווארמה, עובדת ב (4).'), 1));
-    left.appendChild(rv(L2.card('ok', '<t k="comp">יתרון יחסי</t>: למי העלות השולית הנמוכה ביותר', 'בלאפות: ד, עם ' + m('MC(x) = 0.25') + '. בשווארמה: ג, עם ' + m('MC(y) = ' + F('1', '3')) + '.'), 2));
-    left.appendChild(rv(ask('ב מייצרת הכי הרבה שווארמה. למה לא שולחים אותה ראשונה לשווארמה?', 'חשבו על מה שכל אחת מוותרת עליו.'), 3));
-    left.appendChild(rv(L2.ans('כל שווארמה של ב עולה לאפה שלמה (' + m(F('4', '4') + ' = 1') + '). כל שווארמה של ג עולה רק שליש לאפה. <b>יתרון יחסי קובע את סדר השליחה, יתרון מוחלט לא.</b>'), 4));
-    const right = h('div.stack');
-    right.appendChild(rv(qc(ctx, 'עובד א מייצר 6 יחידות x או 6 יחידות y. עובד ב מייצר 3 יחידות x או יחידה אחת של y. למי יתרון יחסי בייצור x?', [
-      { t: 'לעובד א', why: 'לעובד א יש יתרון מוחלט בשני המוצרים, אבל ' + m('MC(x) = ' + F('6', '6') + ' = 1') + ' אצלו.' },
-      { t: 'לעובד ב', ok: true, why: m('MC(x) = ' + F('1', '3')) + ' אצל ב, מול 1 אצל א. ב מוותר על פחות y לכל יחידת x.' },
-      { t: 'לאף אחד', why: 'תמיד יש למישהו עלות שולית נמוכה יותר, אלא אם הן שוות. כאן הן שונות.' }]), 5));
-    right.appendChild(rv(qc(ctx, 'ובאותו משק, למי יתרון יחסי בייצור y?', [
-      { t: 'לעובד א', ok: true, why: m('MC(y) = 1') + ' אצל א, מול ' + m(F('3', '1') + ' = 3') + ' אצל ב.' },
-      { t: 'לעובד ב', why: 'כל יחידת y של ב עולה 3 יחידות x. זו העלות הגבוהה.' }]), 6));
-    right.appendChild(rv(h('div', { style: 'display:flex;justify-content:center' }, memeCard('cat', 'מייצרת הכי הרבה? יפה', 'אבל נשלחת מי שמוותרת הכי מעט')), 4));
-    root.appendChild(h('div.cols', left, right));
-  }
-});
 
-/* ===== Question 2: משק ״חלם״ ===== */
-const W2 = [['א', 10, 5], ['ב', 2, 8], ['ג', 4, 4], ['ד', 4, 8]]; /* [name, apples y, dates x] */
-const W2P = [[0, 20], [8, 18], [16, 14], [20, 10], [25, 0]], W2L = ['A', 'B', 'C', 'D', 'E'];
-const W2head = ['עובדת', 'תפוחים<br>' + m('y'), 'תמרים<br>' + m('x')];
-const W2lead = 'במשק ״חלם״ מייצרים תפוחים (y) או תמרים (x). ארבע עובדות, וכל אחת מקדישה את כל זמנה למוצר אחד.';
-function w2Chart(host, o = {}) {
-  const ch = PPC.chart(host, { w: 520, h: 380, xmax: 28, ymax: 22.5, xLabel: 'תמרים (x)', yLabel: 'תפוחים (y)', ticksX: [8, 16, 20, 25], ticksY: [10, 14, 18, 20] });
-  if (o.curve !== false) { ch.curve(W2P); W2P.forEach((p, i) => ch.dot(p[0], p[1], { cls: 'gold', label: W2L[i], r: 6, pos: i === 4 ? 'ne' : i === 2 ? 'sw' : 'ne' })); }
-  return ch;
-}
-slide({
-  id: 'h1', kick: 'שאלה 2 · סעיף א', kc: 'p', title: 'משק ״חלם״: שלבים 1 עד 3', mantra: ['k3', 'k4'],
-  tags: { ex: ['3.1', '3.3'] },
-  build(root, ctx) {
-    root.appendChild(h('p.lead', { html: W2lead + ' נבנה את העקומה באותם ארבעה שלבים. קודם אתם.' }));
-    const T = Tryit({ head: 'שלבים 1 ו-2', sub: 'נקודות קצה, ועלות שולית של כל עובדת בייצור תמרים.',
-      hints: ['Ymax הוא סכום עמודת התפוחים, Xmax סכום עמודת התמרים.', m('MC(x) = ' + F('y', 'x')) + '. לעובדת א: ' + m(F('10', '5')) + '.'],
-      solution: () => h('div.stack', h('div', { html: m('Ymax = 10 + 2 + 4 + 4 = 20') + ' &nbsp; ' + m('Xmax = 5 + 8 + 4 + 8 = 25') }),
-        L2.tbl(['עובדת', m('MC(x) = y / x'), m('MC(y) = x / y')], W2.map(w => [h('b', w[0]), m(F(w[1], w[2]) + ' = ' + fmt(w[1] / w[2])), m(F(w[2], w[1]) + ' = ' + fmt(w[2] / w[1]))]))) });
-    const rows = W2.map(w => [h('b', w[0]), m(w[1]), m(w[2]), T.field('mx' + w[0], w[1] / w[2], { label: 'MC(x) ' + w[0] })]);
-    rows.push([h('b', 'סה״כ'), T.field('ymax', 20, { label: 'Ymax' }), T.field('xmax', 25, { label: 'Xmax' }), '']);
-    T.row.remove();
-    $('div', T.el).after(L2.tbl(W2head.concat(['עלות שולית<br>בייצור x']), rows));
-    const right = h('div.stack');
-    right.appendChild(rv(qc(ctx, 'שלב 3: מהו סדר השליחה לייצור תמרים, מהראשונה לאחרונה?', [
-      { t: 'ב, ד, ג, א', ok: true, why: 'לפי ' + m('MC(x)') + ' בסדר עולה: ' + m('0.25, 0.5, 1, 2') + '.' },
-      { t: 'ב, ד, א, ג', why: 'א היא היקרה ביותר בתמרים: כל תמר עולה לה 2 תפוחים. היא אחרונה.' },
-      { t: 'א, ג, ד, ב', why: 'זה הסדר לפי ' + m('MC(y)') + ', כלומר סדר השליחה לתפוחים.' },
-      { t: 'ד, ב, ג, א', why: 'ב ו-ד מייצרות 8 תמרים כל אחת, אבל ב מוותרת על 2 תפוחים וד על 4. ב זולה יותר וקודמת.' }]), 1));
-    root.appendChild(h('div.cols', T.el, right));
-  }
-});
-
-slide({
-  id: 'h1b', kick: 'שאלה 2 · סעיף א', kc: 'p', title: 'משק ״חלם״: שלב 4, הנקודות והשרטוט', mantra: ['k4'],
-  tags: { ex: ['3.3'] },
-  build(root, ctx) {
-    const T = Tryit({ head: 'מצאו את נקודות השבר', sub: 'מתחילים ב-' + m('A(0, 20)') + '. כל עובדת מוסיפה את התמרים שלה ומורידה את התפוחים שלה.',
-      hints: ['ב עוברת ראשונה: ' + m('x = 0 + 8') + ', ' + m('y = 20 − 2') + '.', 'אחריה ד: ' + m('x = 8 + 8') + ', ' + m('y = 18 − 4') + '.'],
-      solution: () => L2.tbl(['נקודה', 'מי עברה', 'x', 'y'], [['A', 'אף אחת', m('0'), m('20')], ['B', 'ב', m('0 + 8 = 8'), m('20 − 2 = 18')], ['C', 'ד', m('8 + 8 = 16'), m('18 − 4 = 14')], ['D', 'ג', m('16 + 4 = 20'), m('14 − 4 = 10')], ['E', 'א', m('20 + 5 = 25'), m('10 − 10 = 0')]]) });
-    const pts = [['B', 'ב', 8, 18], ['C', 'ד', 16, 14], ['D', 'ג', 20, 10]];
-    const rows = [[h('b', 'A'), 'אף אחת', m('0'), m('20')]].concat(pts.map(p => [h('b', p[0]), 'עוברת ' + p[1], T.field(p[0] + 'x', p[2], { label: p[0] + ' x' }), T.field(p[0] + 'y', p[3], { label: p[0] + ' y' })]), [[h('b', 'E'), 'עוברת א', m('25'), m('0')]]);
-    T.row.remove();
-    $('div', T.el).after(L2.tbl(['נקודה', 'מה קרה', 'תמרים x', 'תפוחים y'], rows));
-    const host = h('div');
-    const right = h('div.stack', rv(host, 1), rv(L2.card('mc', '', 'שיפועי הקטעים: ' + m('0.25, 0.5, 1, 2') + ', העלויות השוליות של ב, ד, ג, א. הם גדלים, ולכן העקומה קעורה.'), 2));
-    root.appendChild(h('div.cols', T.el, right));
-    w2Chart(host);
-  }
-});
-
-slide({
-  id: 'h2', kick: 'שאלה 2 · סעיפים ב, ג', kc: 'p', title: 'משק ״חלם״: למי יתרון יחסי?', mantra: ['k3'],
-  tags: { ex: ['3.2'], q: ['3.10', '3.16'] },
-  build(root, ctx) {
-    root.appendChild(h('p.lead', { html: '<t k="comp">יתרון יחסי</t> במוצר: העלות השולית הנמוכה ביותר בייצורו. לכן מחשבים גם ' + m('MC(y)') + '.' }));
-    const t = L2.tbl(W2head.concat([m('MC(y) = x / y'), m('MC(x) = y / x')]), W2.map(w => [h('b', w[0]), m(w[1]), m(w[2]), { v: m(fmt(w[2] / w[1])), sub: w[2] + ' / ' + w[1], s: 1 }, { v: m(fmt(w[1] / w[2])), sub: w[1] + ' / ' + w[2], s: 2 }]));
-    const right = h('div.stack');
-    right.appendChild(rv(qc(ctx, 'סעיף ב: לאיזו עובדת יתרון יחסי בייצור תפוחים?', [
-      { t: 'א', ok: true, why: m('MC(y) = ' + F('5', '10') + ' = 0.5') + ', הנמוכה ביותר. כל תפוח עולה לה חצי תמר.' },
-      { t: 'ב', why: m('MC(y) = 4') + ' אצל ב, היקרה ביותר בתפוחים.' },
-      { t: 'ג', why: m('MC(y) = 1') + ' אצל ג.' },
-      { t: 'ד', why: m('MC(y) = 2') + ' אצל ד.' }]), 1));
-    right.appendChild(rv(qc(ctx, 'סעיף ג: לאיזו עובדת יתרון יחסי בייצור תמרים?', [
-      { t: 'א', why: m('MC(x) = 2') + ' אצל א, היקרה ביותר בתמרים.' },
-      { t: 'ב', ok: true, why: m('MC(x) = ' + F('2', '8') + ' = 0.25') + ', הנמוכה ביותר. לכן היא נשלחה ראשונה לתמרים.' },
-      { t: 'ג', why: m('MC(x) = 1') + ' אצל ג.' },
-      { t: 'ד', why: 'ד מייצרת 8 תמרים כמו ב, אבל ' + m('MC(x) = 0.5') + ' אצלה, יותר מאצל ב.' }]), 2));
-    root.appendChild(h('div.cols', t, right));
-  }
-});
-
-function costSlide(o) {
+/* ===== lesson 3: worked examples with full solutions (building the curve from workers) ===== */
+function workEx(o) {
+  /* o: {id, n, name, lead, xl, yl, W:[[name,x,y]], note, qc, meme} ; two slides: steps 1 to 3, then step 4 and the drawing */
+  const Ymax = o.W.reduce((s, w) => s + w[2], 0), Xmax = o.W.reduce((s, w) => s + w[1], 0);
+  const r2 = v => (Math.round(v * 100) / 100).toString();
+  const eq = (a, b) => (Math.abs(Math.round(a / b * 100) / 100 - a / b) < 1e-9 ? ' = ' : ' ≈ ') + r2(a / b);
+  const order = o.W.slice().sort((a, b) => a[2] / a[1] - b[2] / b[1]);
+  const P = [[0, Ymax]]; order.forEach(w => { const l = P[P.length - 1]; P.push([l[0] + w[1], l[1] - w[2]]); });
+  const L = 'ABCDEF';
+  const xn = o.xl.split('<br>')[0], yn = o.yl.split('<br>')[0];
+  const qtext = o.lead + ' הטבלה מציגה כמה כל עובד מייצר ביום, מכל מוצר. בנו את עקומת התמורה של המשק בארבעה שלבים.';
+  const wt = () => L2.tbl(['עובד', o.xl, o.yl], o.W.map(w => [w[0], m(w[1]), m(w[2])]));
   slide({
-    id: o.id, kick: o.kick, kc: 'p', title: o.title, mantra: o.mantra, tags: o.tags,
+    id: o.id + 'a', kick: 'דוגמה ' + o.n + ' · שלבים 1 עד 3', kc: 'y', title: o.name + ': נקודות קצה, עלות שולית ודירוג', mantra: ['k3', 'k4'],
     build(root, ctx) {
-      root.appendChild(h('p.lead', { html: o.lead }));
-      const T = Tryit({ head: 'נסו לבד', q: o.q, hints: o.hints, solution: () => h('div.stack', o.sol.map(s => h('div', { html: s }))) });
-      o.fields.forEach(f => T.labelled(f[0], m(f[1]), f[2]));
-      const left = h('div.stack', T.el);
-      (o.after || []).forEach((a, i) => left.appendChild(rv(typeof a === 'function' ? a(ctx) : a, i + 1)));
+      const left = h('div.stack.l2-tight', qcard('דוגמה ' + o.n + ', פתרון מלא', qtext), wt());
+      const right = h('div.stack.l2-tight');
+      left.appendChild(rv(ask('נסו לבד את שלושת השלבים הראשונים, ורק אז המשיכו.', 'נקודות קצה, עלות שולית של כל עובד, דירוג.'), 1));
+      left.appendChild(rv(L2.card('y', 'שלב 1: נקודות הקצה', m('Ymax = ' + o.W.map(w => w[2]).join(' + ') + ' = ' + Ymax) + ': כולם מייצרים ' + yn + '. הנקודה ' + m('(0, ' + Ymax + ')') + '.<br>' + m('Xmax = ' + o.W.map(w => w[1]).join(' + ') + ' = ' + Xmax) + ': כולם מייצרים ' + xn + '. הנקודה ' + m('(' + Xmax + ', 0)') + '.'), 2));
+      const mcRows = o.W.map(w => ({ cells: [w[0], { v: m(F(w[2], w[1]) + eq(w[2], w[1])), s: 3 }, { v: m(F(w[1], w[2]) + eq(w[1], w[2])), s: 4 }] }));
+      right.appendChild(rv(h('div.card', h('h3', 'שלב 2: עלות שולית של כל עובד'), h('div.l2-note', { html: m('MC(x) = ' + F('y', 'x')) + ': מה שהעובד מוותר עליו מ-y, חלקי מה שהוא מייצר מ-x. ' + m('MC(y) = ' + F('x', 'y')) + ': ההופכי.' }),
+        L2.tbl(['עובד', m('MC(x)'), m('MC(y)')], mcRows)), 3));
+      right.appendChild(rv(L2.card('ok', 'שלב 3: דירוג', 'מי שעובר ראשון לייצר x הוא מי שמוותר על הכי מעט y לכל יחידת x. מהזול ליקר: <b>' + order.map(w => w[0] + ' (' + r2(w[2] / w[1]) + ')').join(', ') + '</b>.'), 5));
+      if (o.note) right.appendChild(rv(L2.card('mc', 'שימו לב', o.note), 6));
+      root.appendChild(h('div.cols', left, right));
+    }
+  });
+  slide({
+    id: o.id + 'b', kick: 'דוגמה ' + o.n + ' · שלב 4', kc: 'y', title: o.name + ': נקודות השבר והשרטוט', mantra: ['k4', 'm7'],
+    build(root, ctx) {
+      const rows = P.map((p, i) => {
+        const prev = P[i - 1], w = order[i - 1];
+        return { cells: [{ v: '<b>' + L[i] + '</b>', s: i }, { v: w ? 'עובד ' + w[0] + ' עובר ל-x' : 'כולם מייצרים y', s: i },
+          { v: m(p[0]), sub: prev ? prev[0] + ' + ' + w[1] : '', s: i }, { v: m(p[1]), sub: prev ? prev[1] + ' − ' + w[2] : '', s: i }] };
+      });
+      const left = h('div.stack.l2-tight', h('p.lead', { style: 'margin:0', html: 'מתחילים ב-' + m('(0, Ymax)') + '. כל עובד, לפי הסדר, מוסיף את ה-x שלו ומוריד את ה-y שלו. לחיצה אחר לחיצה, עובד אחר עובד.' }),
+        L2.tbl(['נקודה', 'מה קרה', 'x', 'y'], rows));
+      const n = order.length;
+      const rightB = h('div.stack.l2-tight');
+      rightB.appendChild(rv(L2.card('mc', 'השיפועים', 'שיפוע כל קטע הוא העלות השולית של העובד שעבר בו: ' + m(order.map(w => r2(w[2] / w[1])).join(', ')) + '. הם גדלים משמאל לימין, והעקומה קעורה.'), n + 1));
+      if (o.qc) left.appendChild(rv(qc(ctx, o.qc.q, o.qc.opts), n + 2));
+      if (o.meme) rightB.appendChild(rv(h('div', { style: 'display:flex;justify-content:center' }, memeCard(o.meme[0], o.meme[1], o.meme[2])), n + 2));
       const host = h('div');
-      root.appendChild(h('div.cols', left, host));
-      const ch = w2Chart(host);
-      const draw = k => { ch.clear('ann'); if (k >= 1 && o.mark) o.mark(ch); };
-      draw(ctx.static ? 9 : 0); ctx.onStep(k => draw(k));
+      root.appendChild(h('div.cols', left, h('div.stack', host, rightB)));
+      const ch = PPC.chart(host, { w: 560, h: 400, xmax: Xmax * 1.12, ymax: Ymax * 1.14, xLabel: xn + ' (x)', yLabel: yn + ' (y)', ticksX: P.slice(1).map(p => p[0]), ticksY: P.slice(0, -1).map(p => p[1]) });
+      function draw(k, anim) {
+        ['curve', 'pts', 'ann'].forEach(c => ch.clear(c));
+        const s = Math.min(k, n);
+        for (let i = 1; i <= s; i++) {
+          const a = P[i - 1], b = P[i];
+          if (k <= n) { ch.line(a[0], a[1], b[0], a[1], 'guide x'); ch.line(b[0], a[1], b[0], b[1], 'guide y'); }
+          ch.path([a, b], 'curve');
+        }
+        if (k > n) order.forEach((w, i) => { const a = P[i], b = P[i + 1]; ch.text((a[0] + b[0]) / 2 + Xmax * 0.03, (a[1] + b[1]) / 2 + Ymax * 0.04, w[0] + ': ' + r2(w[2] / w[1]), 'bl', 'start').setAttribute('style', 'fill:var(--mc);font-weight:700'); });
+        for (let i = 0; i <= s; i++) ch.dot(P[i][0], P[i][1], { cls: 'gold', label: L[i], r: 7, pop: anim && i === s, pos: i === n ? 'n' : 'ne' });
+      }
+      draw(ctx.static ? 99 : 0, false);
+      ctx.onStep((k, dir, init) => draw(k, !init && dir > 0));
     }
   });
 }
-costSlide({
-  id: 'h3', kick: 'שאלה 2 · סעיף ד', title: 'עלויות של תמרים בנקודת שבר', mantra: ['k1', 'k5'], tags: { ex: ['3.4'] },
-  lead: 'המשק מייצר ביעילות 16 תמרים. יעיל פירושו על העקומה, ולכן זו נקודה C, ' + m('(16, 14)') + '.',
-  q: 'מהי העלות הכוללת, הממוצעת והשולית של תמרים בנקודה C?',
-  hints: [m('TC(x) = Ymax − Y = 20 − 14') + '.', 'נקודת שבר: עלות שולית של x לפי הקטע משמאל, BC.'],
-  sol: [m('TC(x) = 20 − 14 = 6') + ' תפוחים', m('AC(x) = ' + F('6', '16') + ' = 0.375'), m('MC(x) = ' + F('18 − 14', '16 − 8') + ' = 0.5') + ' (קטע BC)'],
-  fields: [['tc', 'TC', 6], ['ac', 'AC', 0.375], ['mc', 'MC', 0.5]],
-  after: [L2.card('y', 'קיצור דרך בשאלות עם עובדים', 'קטע BC שייך לעובדת ד, שהועברה לתמרים שנייה. העלות השולית בקטע היא העלות השולית שלה: ' + m(F('4', '8') + ' = 0.5') + '.')],
-  mark: ch => { PPC.el('path', { class: 'seg-hl', d: `M${ch.sx(8)},${ch.sy(18)} L${ch.sx(16)},${ch.sy(14)}` }, ch.layer('ann')); ch.line(0, 14, 16, 14, 'guide y'); ch.vBracket(16, 20, 14, 'TC = 6', 'tc', 1); ch.line(0, 20, 16, 20, 'guide'); }
-});
-costSlide({
-  id: 'h4', kick: 'שאלה 2 · סעיף ה', title: 'עלויות של תפוחים באותה נקודה', mantra: ['k1', 'k5'], tags: { ex: ['3.4'], q: ['3.15'] },
-  lead: 'המשק מייצר ביעילות 14 תפוחים. זו שוב נקודה C, ' + m('(16, 14)') + '. עכשיו העלות של y, במונחי תמרים.',
-  q: 'מהי העלות הכוללת, הממוצעת והשולית של תפוחים בנקודה C?',
-  hints: [m('TC(y) = Xmax − X = 25 − 16') + '.', 'עלות שולית של y בנקודת שבר: ההופכי של שיפוע הקטע מימין, CD.'],
-  sol: [m('TC(y) = 25 − 16 = 9') + ' תמרים', m('AC(y) = ' + F('9', '14') + ' ≈ 0.643'), 'שיפוע CD: ' + m(F('14 − 10', '20 − 16') + ' = 1') + ', ולכן ' + m('MC(y) = ' + F('1', '1') + ' = 1') + '. זו עובדת ג.'],
-  fields: [['tc', 'TC', 9], ['ac', 'AC', 9 / 14], ['mc', 'MC', 1]],
-  after: [L2.card('', 'תרגול הכלל: עלות שולית של y בנקודה B', 'מ-B, הקטע מימין הוא BC, ששיפועו 0.5. לכן ' + m('MC(y) = ' + F('1', '0.5') + ' = 2') + ' תמרים לתפוח. זו עובדת ד: ' + m(F('8', '4') + ' = 2') + '.')],
-  mark: ch => { PPC.el('path', { class: 'seg-hl', d: `M${ch.sx(16)},${ch.sy(14)} L${ch.sx(20)},${ch.sy(10)}` }, ch.layer('ann')); ch.line(16, 0, 16, 14, 'guide x'); ch.hBracket(1.2, 16, 25, 'TC = 9', 'tc', -1); }
-});
 
 slide({
-  id: 'h5', kick: 'שאלה 2 · סעיף ו', kc: 'p', title: 'נקודה שלא מופיעה בגרף: 10 תמרים', mantra: ['k1'], tags: { ex: ['3.5'], q: ['3.14'] },
+  id: 'exs', kick: 'תרגילים נוספים', kc: 'p', title: 'שתי דוגמאות נוספות, עם פתרון מלא', steps: 0,
   build(root, ctx) {
-    root.appendChild(h('p.lead', { html: 'המשק מייצר ביעילות 10 תמרים. אין נקודת שבר ב-' + m('x = 10') + '. נקרא לנקודה Q ונמצא אותה.' }));
-    const left = h('div.stack.l2-tight');
-    left.appendChild(rv(L2.card('', 'צעד 1: באיזה קטע?', m('x = 10') + ' בין 8 ל-16, כלומר בקטע BC, בין ' + m('B(8, 18)') + ' ל-' + m('C(16, 14)') + '.'), 1));
-    left.appendChild(rv(L2.card('', 'צעד 2: שיפוע', m('a = ' + F('14 − 18', '16 − 8') + ' = −0.5')), 2));
-    left.appendChild(rv(L2.card('', 'צעד 3: משוואת הקו', 'מציבים את B ב-' + m('y = ax + b') + ': ' + m('18 = −0.5 × 8 + b') + ', ולכן ' + m('b = 22') + '. הקו: ' + m('y = 22 − 0.5x') + '.'), 3));
-    left.appendChild(rv(L2.card('ok', 'צעד 4: הנקודה', m('y = 22 − 0.5 × 10 = 17') + '. לכן ' + m('Q = (10, 17)') + '. בדיקת היגיון: 17 בין 18 ל-14.'), 4));
-    const T = Tryit({ head: 'צעד 5: העלויות', q: 'חשבו עלות כוללת, ממוצעת ושולית של תמרים בנקודה Q.',
-      hints: [m('TC(x) = 20 − 17') + '.', 'Q באמצע קטע BC, ולכן העלות השולית היא השיפוע שלו.'],
-      solution: () => h('div.stack', h('div', { html: m('TC(x) = 20 − 17 = 3') }), h('div', { html: m('AC(x) = ' + F('3', '10') + ' = 0.3') }), h('div', { html: m('MC(x) = 0.5') + ' (קטע BC, עובדת ד)' }), h('div.l2-note', 'השולית 0.5 מעל הממוצעת 0.3: הממוצעת עדיין עולה.')) });
-    T.labelled('tc', m('TC'), 3); T.labelled('ac', m('AC'), 0.3); T.labelled('mc', m('MC'), 0.5);
-    left.appendChild(rv(T.el, 5));
-    const host = h('div');
-    root.appendChild(h('div.cols', left, host));
-    const ch = w2Chart(host);
-    function draw(k) {
-      ch.clear('ann');
-      if (k >= 1) PPC.el('path', { class: 'seg-hl', d: `M${ch.sx(8)},${ch.sy(18)} L${ch.sx(16)},${ch.sy(14)}` }, ch.layer('ann'));
-      if (k >= 4) { ch.line(10, 0, 10, 17, 'guide x'); ch.line(0, 17, 10, 17, 'guide y'); ch.dot(10, 17, { cls: 'mc', r: 8, label: 'Q (10, 17)', pos: 'sw', layer: 'ann' }); }
-    }
-    draw(ctx.static ? 9 : 0); ctx.onStep(k => draw(k));
+    root.appendChild(h('p.lead', 'אותן ארבעה שלבים, במשקים אחרים. בכל דוגמה: קודם נסו לבד, ואז הפתרון נפתח לחיצה אחר לחיצה.'));
+    const g = h('div.hwg');
+    [['exg', 'דוגמה 1: משק ״גולן״', 'שלושה עובדים, תפוחים או אגסים'], ['exr', 'דוגמה 2: משק ״שרון״', 'ארבעה עובדים, והעובד שמייצר הכי הרבה x לא עובר ראשון']].forEach(d =>
+      g.appendChild(h('div.card.y', h('h3', d[1]), h('div', d[2]), h('div', { style: 'margin-top:8px' }, h('a.chip', { href: '#' + d[0] + 'a', onclick: e => { e.preventDefault(); Deck.go(d[0] + 'a'); } }, 'לדוגמה')))));
+    g.appendChild(h('div.card.ok', h('h3', 'ובחוברת'), h('div', 'תרגילים 3.1 עד 3.5 לתרגול, עם פתרון מלא. תרגילים 3.6, 3.7 ושאלות 3.13 עד 3.17 להגשה.')));
+    root.appendChild(g);
   }
 });
+workEx({ id: 'exg', n: 1, name: 'משק ״גולן״', lead: 'במשק ״גולן״ שלושה עובדים. כל עובד מקדיש את כל זמנו למוצר אחד: תפוחים (x) או אגסים (y).', xl: 'תפוחים<br>' + m('x'), yl: 'אגסים<br>' + m('y'),
+  W: [['א', 4, 2], ['ב', 3, 6], ['ג', 5, 5]],
+  qc: { q: 'מי מייצר מה בנקודה ' + m('C(9, 6)') + '?', opts: [
+    { t: 'א ו-ג תפוחים, ב אגסים', ok: true, why: 'א ו-ג עברו לתפוחים: ' + m('4 + 5 = 9') + '. ב נשאר באגסים: 6.' },
+    { t: 'ב ו-ג תפוחים, א אגסים', why: 'ב הוא היקר ביותר בתפוחים, ולכן הוא עובר אחרון.' },
+    { t: 'כל עובד מייצר חלק מכל מוצר', why: 'בנקודת שבר כל עובד מייצר מוצר אחד בלבד.' }] },
+  meme: ['party', 'שלושה עובדים, שלושה קטעים', 'וכל קטע תלול מקודמו'] });
+workEx({ id: 'exr', n: 2, name: 'משק ״שרון״', lead: 'במשק ״שרון״ ארבעה עובדים. כל עובד מקדיש את כל זמנו למוצר אחד: תותים (x) או מלפפונים (y).', xl: 'תותים<br>' + m('x'), yl: 'מלפפונים<br>' + m('y'),
+  W: [['א', 10, 10], ['ב', 8, 2], ['ג', 2, 4], ['ד', 4, 2]],
+  note: 'עובד א מייצר הכי הרבה תותים (10), ובכל זאת הוא שלישי בסדר. כל תות שלו עולה מלפפון שלם, ואילו תות של ב עולה רק רבע מלפפון. הסדר נקבע לפי העלות השולית, לא לפי הכמות.',
+  qc: { q: 'איזה עובד עבר בקטע CD?', opts: [
+    { t: 'עובד א', ok: true, why: 'הסדר: ב, ד, א, ג. הקטע השלישי, CD, של א: ' + m(F('14 − 4', '22 − 12') + ' = 1') + ', העלות השולית שלו.' },
+    { t: 'עובד ג', why: 'ג היקר ביותר בתותים, ולכן הוא בקטע האחרון, DE.' },
+    { t: 'עובד ד', why: 'ד שני בסדר, ולכן בקטע BC.' }] },
+  meme: ['cat', 'מייצר הכי הרבה? יפה', 'אבל נשלח מי שמוותר הכי מעט'] });
 
-/* ===== focused question: left and right of a vertex ===== */
-slide({
-  id: 'f1', kick: 'שאלה ממוקדת', kc: 'p', title: 'עלות שולית משמאל ומימין לנקודה', mantra: ['k5'], tags: { ex: ['3.6'], q: ['3.17'] },
-  build(root, ctx) {
-    const P = [[0, 100], [70, 80], [120, 50], [170, 0]], L = ['A', 'B', 'C', 'D'];
-    root.appendChild(h('p.lead', { html: 'עקומת תמורה: ' + m('A(0, 100)') + ', ' + m('B(70, 80)') + ', ' + m('C(120, 50)') + ', ' + m('D(170, 0)') + '. שיפועי הקטעים: ' + m('AB: ' + F('20', '70') + ' ≈ 0.286') + ', ' + m('BC: ' + F('30', '50') + ' = 0.6') + ', ' + m('CD: ' + F('50', '50') + ' = 1') + '.' }));
-    const T = Tryit({ head: 'ארבעה סעיפים', sub: 'x: השיפוע משמאל לנקודה. y: אחת חלקי השיפוע מימין לנקודה.',
-      hints: ['70X היא נקודה B. משמאל ל-B: קטע AB.', '100Y היא נקודה A. מימין ל-A: קטע AB. 50Y היא נקודה C. מימין ל-C: קטע CD.'],
-      solution: () => L2.tbl(['סעיף', 'נקודה', 'קטע', 'חישוב'], [
-        ['א. ' + m('70X'), 'B', 'AB, משמאל', m(F('100 − 80', '70 − 0') + ' ≈ 0.286')],
-        ['ב. ' + m('120X'), 'C', 'BC, משמאל', m(F('80 − 50', '120 − 70') + ' = 0.6')],
-        ['ג. ' + m('100Y'), 'A', 'AB, מימין', m(F('70', '20') + ' = 3.5')],
-        ['ד. ' + m('50Y'), 'C', 'CD, מימין', m(F('1', '1') + ' = 1')]]) });
-    T.labelled('a', 'א. ' + m('MC(70X)'), 2 / 7, { tol: 0.006 }); T.labelled('b', 'ב. ' + m('MC(120X)'), 0.6); T.labelled('c', 'ג. ' + m('MC(100Y)'), 3.5); T.labelled('d', 'ד. ' + m('MC(50Y)'), 1);
-    const left0 = [];
-    [1, 2, 3, 4].forEach(k => left0.push(rv(h('span', { style: 'display:none' }), k)));
-    const left = h('div.stack', T.el, ...left0, rv(L2.card('y', 'למה x משמאל ו-y מימין?', 'היחידה ה-70 של x היא האחרונה שנוספה בדרך מ-A ל-B, כלומר בקטע שמשמאל. היחידה ה-50 של y היא האחרונה שנוספה בדרך מ-D ל-C, כלומר בקטע שמימין.'), 5), rv(h('div', { style: 'display:flex;justify-content:center' }, memeCard('ghost', 'x מסתכל אחורה, y קדימה', 'כל אחד והקטע שלו')), 5));
-    const host = h('div');
-    root.appendChild(h('div.cols', left, host));
-    const ch = PPC.chart(host, { w: 520, h: 380, xmax: 185, ymax: 112, xLabel: 'X', yLabel: 'Y', ticksX: [70, 120, 170], ticksY: [50, 80, 100] });
-    const SEG = [null, [0, 1, 'א. 70X: הקטע משמאל ל-B, AB'], [1, 2, 'ב. 120X: הקטע משמאל ל-C, BC'], [0, 1, 'ג. 100Y: הקטע מימין ל-A, AB'], [2, 3, 'ד. 50Y: הקטע מימין ל-C, CD']];
-    const cap = h('div.fb.nt', 'לחיצה אחר לחיצה: לכל סעיף, הקטע שקובע את העלות השולית.');
-    host.appendChild(cap);
-    function draw(k) {
-      ['curve', 'pts', 'ann'].forEach(c => ch.clear(c));
-      ch.curve(P); P.forEach((p, i) => ch.dot(p[0], p[1], { cls: 'gold', label: L[i], r: 6, pos: i === 3 ? 'n' : 'ne' }));
-      const sg = SEG[Math.min(k, 4)];
-      if (sg) { PPC.el('path', { class: 'seg-hl', d: `M${ch.sx(P[sg[0]][0])},${ch.sy(P[sg[0]][1])} L${ch.sx(P[sg[1]][0])},${ch.sy(P[sg[1]][1])}` }, ch.layer('ann')); cap.innerHTML = '<b>' + sg[2] + '</b>'; }
-      else cap.textContent = 'לחיצה אחר לחיצה: לכל סעיף, הקטע שקובע את העלות השולית.';
-    }
-    draw(ctx.static ? 0 : 0);
-    ctx.onStep(k => draw(k));
-  }
-});
+/* ---- booklet questions 3.8 to 3.17 (generated from the booklet source) ---- */
+const MCQDATA = {"3.8": {"id": "3.8", "set": "שאלות אמריקאיות א׳", "kind": "calc", "ans": "ב", "stem": "עובד מייצר ביום 12 יחידות x או 4 יחידות y. מהי העלות השולית שלו בייצור x?", "opts": [{"l": "א", "h": "<span class=\"m\">3</span>"}, {"l": "ב", "h": "<span class=\"m\">≈ 0.33</span>"}, {"l": "ג", "h": "<span class=\"m\">12</span>"}, {"l": "ד", "h": "<span class=\"m\">4</span>"}, {"l": "ה", "h": "<span class=\"m\">16</span>"}], "per": {"א": "זו העלות השולית שלו בייצור y: <span class=\"m\"><span class=\"fr\"><span>12</span><span>4</span></span></span>.", "ב": "<span class=\"m\">MC(x) = <span class=\"fr\"><span>4</span><span>12</span></span> ≈ 0.33</span>: כל יחידת x עולה שליש יחידת y.", "ג": "זו הכמות של x, לא העלות.", "ד": "זו כל כמות ה-y שהוא מוותר עליה, לא העלות ליחידה.", "ה": "סכום הכמויות. אין לו משמעות כאן."}, "shared": "<div class=\"optx\"><b>כלל:</b> עלות שולית של x אצל עובד: מה שהוא מוותר עליו מ-y, חלקי מה שהוא מייצר מ-x.</div>"}, "3.9": {"id": "3.9", "set": "שאלות אמריקאיות א׳", "kind": "calc", "ans": "ד", "stem": "אותו עובד: 12 יחידות x או 4 יחידות y. מהי העלות השולית שלו בייצור y?", "opts": [{"l": "א", "h": "<span class=\"m\">≈ 0.33</span>"}, {"l": "ב", "h": "<span class=\"m\">4</span>"}, {"l": "ג", "h": "<span class=\"m\">8</span>"}, {"l": "ד", "h": "<span class=\"m\">3</span>"}, {"l": "ה", "h": "<span class=\"m\">48</span>"}], "per": {"א": "זו העלות השולית שלו בייצור x.", "ב": "זו הכמות של y.", "ג": "זה ההפרש בין הכמויות. אין לו משמעות.", "ד": "<span class=\"m\">MC(y) = <span class=\"fr\"><span>12</span><span>4</span></span> = 3</span>: כל יחידת y עולה 3 יחידות x. זה ההופכי של <span class=\"m\">MC(x)</span>.", "ה": "זו מכפלת הכמויות."}, "shared": "<div class=\"optx\"><b>כלל:</b> עלות שולית של y אצל עובד: <span class=\"m\">MC(y) = <span class=\"fr\"><span>x</span><span>y</span></span></span>, ההופכי של <span class=\"m\">MC(x)</span>.</div>"}, "3.10": {"id": "3.10", "set": "שאלות אמריקאיות א׳", "kind": "calc", "ans": "ג", "stem": "במשק שלושה עובדים. עובד א מייצר 4 יחידות x או 8 יחידות y. עובד ב מייצר 3 יחידות x או יחידה אחת של y. עובד ג מייצר 2 יחידות x או 2 יחידות y. כל עובד מקדיש את כל זמנו למוצר אחד. מהו <span class=\"m\">Ymax</span> של המשק?", "opts": [{"l": "א", "h": "<span class=\"m\">9</span>"}, {"l": "ב", "h": "<span class=\"m\">8</span>"}, {"l": "ג", "h": "<span class=\"m\">11</span>"}, {"l": "ד", "h": "<span class=\"m\">20</span>"}, {"l": "ה", "h": "<span class=\"m\">3</span>"}], "per": {"א": "זה <span class=\"m\">Xmax</span>: <span class=\"m\">4 + 3 + 2</span>.", "ב": "זו רק הכמות של עובד א.", "ג": "כל העובדים מייצרים y: <span class=\"m\">8 + 1 + 2 = 11</span>.", "ד": "זה סכום כל המספרים בטבלה.", "ה": "זה מספר העובדים."}, "shared": "<div class=\"optx\"><b>כלל:</b> <span class=\"m\">Ymax</span> הוא סכום עמודת y: הכמות כשכל העובדים מייצרים y.</div>"}, "3.11": {"id": "3.11", "set": "שאלות אמריקאיות א׳", "kind": "calc", "ans": "א", "stem": "במשק שלושה עובדים. עובד א מייצר 4 יחידות x או 8 יחידות y. עובד ב מייצר 3 יחידות x או יחידה אחת של y. עובד ג מייצר 2 יחידות x או 2 יחידות y. כל עובד מקדיש את כל זמנו למוצר אחד. המשק מייצר רק y, ורוצה להתחיל לייצר x. איזה עובד יעבור ראשון לייצר x?", "opts": [{"l": "א", "h": "עובד ב"}, {"l": "ב", "h": "עובד א, כי הוא מייצר הכי הרבה x"}, {"l": "ג", "h": "עובד ג"}, {"l": "ד", "h": "עובד א, כי הוא מייצר הכי הרבה y"}, {"l": "ה", "h": "לא משנה מי, כי בסוף כולם יעברו"}], "per": {"א": "עלויות שוליות של x: א <span class=\"m\"><span class=\"fr\"><span>8</span><span>4</span></span> = 2</span>, ב <span class=\"m\"><span class=\"fr\"><span>1</span><span>3</span></span> ≈ 0.33</span>, ג <span class=\"m\"><span class=\"fr\"><span>2</span><span>2</span></span> = 1</span>. לב העלות הנמוכה ביותר.", "ב": "הכמות לא קובעת. כל יחידת x של א עולה 2 יחידות y, היקר ביותר.", "ג": "ג שני בסדר, עם עלות שולית 1.", "ד": "א מוותר על הכי הרבה y. לכן הוא אחרון.", "ה": "הסדר קובע את צורת העקומה. מי שעובר ראשון קובע את הקטע הראשון."}, "shared": "<div class=\"optx\"><b>כלל:</b> הראשון שעובר לייצר x הוא העובד עם <span class=\"m\">MC(x)</span> הנמוכה ביותר.</div>"}, "3.12": {"id": "3.12", "set": "שאלות אמריקאיות א׳", "kind": "concept", "ans": "ה", "stem": "עקומת תמורה נבנתה מנתוני עובדים, כשהעובדים עברו לייצר x לפי העלות השולית שלהם, מהנמוכה לגבוהה. איזו טענה נכונה?", "opts": [{"l": "א", "h": "כל הקטעים של העקומה באותו שיפוע"}, {"l": "ב", "h": "הקטע הראשון משמאל הוא התלול ביותר"}, {"l": "ג", "h": "בנקודה <span class=\"m\">(0, Ymax)</span> כל העובדים מייצרים x"}, {"l": "ד", "h": "מספר הקטעים שווה למספר המוצרים"}, {"l": "ה", "h": "שיפוע כל קטע שווה לעלות השולית של העובד שעבר בו, והשיפועים גדלים משמאל לימין"}], "per": {"א": "השיפועים שווים רק אם לכל העובדים אותה עלות שולית.", "ב": "הקטע הראשון שייך לעובד הזול ביותר, ולכן הוא המתון ביותר.", "ג": "שם כולם מייצרים y.", "ד": "מספר הקטעים שווה למספר העובדים.", "ה": "כל עובד מוסיף את ה-x שלו ומוריד את ה-y שלו, ולכן שיפוע הקטע שלו הוא <span class=\"m\"><span class=\"fr\"><span>y</span><span>x</span></span></span>. העובדים הזולים עוברים קודם."}, "shared": "<div class=\"optx\"><b>כלל:</b> בעקומה שנבנתה מעובדים, כל קטע שייך לעובד אחד, ושיפועו הוא העלות השולית של אותו עובד.</div>"}};
+const SUBQ3 = {"3.13": "במשק ארבעה עובדים. עובד א מייצר 5 יחידות x או 10 יחידות y. עובד ב מייצר 6 יחידות x או 2 יחידות y. עובד ג מייצר 4 יחידות x או 4 יחידות y. עובד ד מייצר 2 יחידות x או 6 יחידות y. כל עובד מקדיש את כל זמנו למוצר אחד. מהו <span class=\"m\">Ymax</span> של המשק?", "3.14": "במשק ארבעה עובדים. עובד א מייצר 5 יחידות x או 10 יחידות y. עובד ב מייצר 6 יחידות x או 2 יחידות y. עובד ג מייצר 4 יחידות x או 4 יחידות y. עובד ד מייצר 2 יחידות x או 6 יחידות y. כל עובד מקדיש את כל זמנו למוצר אחד. מהי העלות השולית של עובד א בייצור x?", "3.15": "במשק ארבעה עובדים. עובד א מייצר 5 יחידות x או 10 יחידות y. עובד ב מייצר 6 יחידות x או 2 יחידות y. עובד ג מייצר 4 יחידות x או 4 יחידות y. עובד ד מייצר 2 יחידות x או 6 יחידות y. כל עובד מקדיש את כל זמנו למוצר אחד. המשק מייצר רק y. העובדים עוברים לייצר x לפי העלות השולית שלהם. איזה עובד יעבור שלישי?", "3.16": "במשק ארבעה עובדים. עובד א מייצר 5 יחידות x או 10 יחידות y. עובד ב מייצר 6 יחידות x או 2 יחידות y. עובד ג מייצר 4 יחידות x או 4 יחידות y. עובד ד מייצר 2 יחידות x או 6 יחידות y. כל עובד מקדיש את כל זמנו למוצר אחד. מהי נקודת השבר שמתקבלת אחרי ששני העובדים הראשונים עברו לייצר x?", "3.17": "במשק ארבעה עובדים. עובד א מייצר 5 יחידות x או 10 יחידות y. עובד ב מייצר 6 יחידות x או 2 יחידות y. עובד ג מייצר 4 יחידות x או 4 יחידות y. עובד ד מייצר 2 יחידות x או 6 יחידות y. כל עובד מקדיש את כל זמנו למוצר אחד. מהו השיפוע של הקטע השלישי בעקומה, מצד שמאל?"};
 
-/* ===== summary ===== */
+/* ===== lesson 3: summary, quiz, homework and submission ===== */
+const EX3 = [
+  { id: '3.1', title: 'נקודות הקצה ועלות שולית של כל עובד', s: ['w1', 'w2'] },
+  { id: '3.2', title: 'דירוג: מי עובר ראשון לייצר x?', s: ['w3', 'exra'] },
+  { id: '3.3', title: 'בניית העקומה בארבעה שלבים', s: ['w1', 'w2', 'w3', 'w4', 'exga', 'exgb'] },
+  { id: '3.4', title: 'בניית העקומה: ארבעה עובדים', s: ['w4', 'exra', 'exrb'] },
+  { id: '3.5', title: 'קריאת העקומה שנבנתה', s: ['w4', 'exgb'] },
+  { id: '3.6', title: 'בניית עקומה משלושה עובדים', s: ['w1', 'w2', 'w3', 'w4', 'exga', 'exgb'], sub: true },
+  { id: '3.7', title: 'תרגיל מסכם: ארבעה עובדים', s: ['w4', 'exra', 'exrb'], sub: true }
+];
+const Q3MAP = { '3.8': ['w2'], '3.9': ['w2'], '3.10': ['w1'], '3.11': ['w3'], '3.12': ['w4', 'exgb'], '3.13': ['w1'], '3.14': ['w2'], '3.15': ['w3', 'exra'], '3.16': ['w4', 'exrb'], '3.17': ['w4', 'exrb'] };
+const CLASS_Q3 = ['3.8', '3.10', '3.11', '3.12'], HW_Q3 = ['3.9'], SUB_Q3 = ['3.13', '3.14', '3.15', '3.16', '3.17'];
+const TAGS3 = { w1: { ex: ['3.1'], q: ['3.10'] }, w2: { ex: ['3.1'], q: ['3.8', '3.9'] }, w3: { ex: ['3.2'], q: ['3.11'] }, w4: { ex: ['3.3', '3.5'], q: ['3.12'] }, exgb: { ex: ['3.3', '3.5'] }, exrb: { ex: ['3.4'] } };
+Deck.slides.forEach(d => { if (TAGS3[d.id]) d.tags = TAGS3[d.id]; });
+const DUE3 = '17.11.2026';
+const WHERE3 = '<b>ההגשה במודל בלבד, ורק בחלק העליון שלו, תחת הכותרת ״שי צבאן״.</b> הגשה במקום אחר במודל תגיע רק למר שלומי כץ, ולא אליי.';
+const SUBNOTE3 = 'להגשה: תרגילים 3.6 ו-3.7 ושאלות 3.13 עד 3.17 מהחוברת, עד מועד המפגש הבא: ' + m(DUE3) + '. ' + WHERE3;
+
 slide({
-  id: 'sum', kick: 'סיכום', kc: 't', title: 'ריכוז נוסחאות וכללים',
+  id: 'sum3', kick: 'סיכום', kc: 't', title: 'מה עשינו היום: ארבעה שלבים',
   build(root, ctx) {
+    root.appendChild(h('p.lead', 'בונים את עקומת התמורה מנתוני העובדים. שלב אחד בכל לחיצה.'));
     const g = h('div.l2-defs');
     const c = (cls, t, f, mean) => h('div.card.' + cls, h('h3', t), fmBox(cls, '', f), h('div.l2-note', { html: mean }));
-    g.append(...[
-      c('tc', 'עלות כוללת', m('TC(x) = Ymax − Y') + '<br>' + m('TC(y) = Xmax − X'), 'כל הויתור על המוצר האחר.'),
-      c('ac', 'עלות ממוצעת', m('AC(x) = ' + F('TC(x)', 'X')) + ' &nbsp; ' + m('AC(y) = ' + F('TC(y)', 'Y')), 'בכמות אפס אין עלות ממוצעת.'),
-      c('mc', 'עלות שולית', m('MC(x) = ' + F('|ΔY|', 'ΔX')) + ' &nbsp; ' + m('MC(y) = ' + F('ΔX', '|ΔY|')), 'בקטע ישר: השיפוע, ול-y ההופכי שלו.'),
-      c('mc', 'עלות שולית של עובד', m('MC(x) = ' + F('y', 'x')) + ' &nbsp; ' + m('MC(y) = ' + F('x', 'y')), 'מה שמוותרים עליו, חלקי מה שמקבלים.'),
-      c('x', 'בניית העקומה', m('Ymax = Σy') + ' &nbsp; ' + m('Xmax = Σx'), 'מדרגים לפי ' + m('MC(x)') + ' מהנמוכה. מתחילים ב-' + m('(0, Ymax)') + ', כל עובד מוסיף את ה-x שלו ומוריד את ה-y שלו.'),
-      c('ac', 'שולית מול ממוצעת', m('MC < AC') + ' &nbsp; ' + m('MC > AC'), 'הממוצעת יורדת, הממוצעת עולה. בעקומה קעורה השולית עולה ולכן גם הממוצעת.')].map((e, k) => rv(e, k + 1)));
-    root.appendChild(h('p.lead', 'ששת הכלים של היום, אחד בכל לחיצה.'));
+    [c('y', '1. נקודות הקצה', m('Ymax = Σy') + ' &nbsp; ' + m('Xmax = Σx'), 'כל העובדים מייצרים y, או כולם מייצרים x.'),
+     c('mc', '2. עלות שולית של עובד', m('MC(x) = ' + F('y', 'x')) + ' &nbsp; ' + m('MC(y) = ' + F('x', 'y')), 'מה שמוותרים עליו, חלקי מה שמקבלים. הן הופכיות.'),
+     c('ok', '3. דירוג', m('MC(x)') + ' מהנמוכה לגבוהה', 'מי שמוותר על הכי מעט y לכל יחידת x עובר ראשון. לא לפי הכמות.'),
+     c('x', '4. נקודות ושרטוט', m('(0, Ymax) → … → (Xmax, 0)'), 'כל עובד, לפי הסדר, מוסיף את ה-x שלו ומוריד את ה-y שלו.'),
+     c('mc', 'שיפוע הקטע', m(F('|ΔY|', 'ΔX') + ' = MC(x)'), 'של העובד שעבר בקטע. השיפועים גדלים, והעקומה קעורה.'),
+     c('ac', 'חיזוק מתחילת השיעור', m('MC < AC') + ' &nbsp; ' + m('MC > AC'), 'שולית מתחת לממוצעת מורידה אותה, ומעליה מעלה אותה.')].forEach((e, k) => g.appendChild(rv(e, k + 1)));
     root.appendChild(g);
-    root.appendChild(rv(h('div.card.y', { style: 'margin-top:12px' }, h('div', { html: '<b>נקודת שבר:</b> x לפי הקטע משמאל, y לפי ההופכי של הקטע מימין. &nbsp; <b>בין נקודות:</b> מוצאים את הקטע, את השיפוע, ואת y. &nbsp; <b>יתרון יחסי:</b> עלות שולית נמוכה ביותר. <b>יתרון מוחלט:</b> הכמות הגדולה ביותר.' })), 7));
-    root.appendChild(rv(h('div', { style: 'margin-top:12px;display:flex;justify-content:center' }, memeCard('trophy', 'שולית, ממוצעת, יתרון יחסי', 'עכשיו העקומה לא נופלת מהשמיים')), 8));
+    root.appendChild(rv(h('div.card.y', { style: 'margin-top:12px', html: '<b>בשיעור הבא:</b> יתרון יחסי ויתרון מוחלט, משק ״חלם״, ועלויות על עקומה שנבנתה, כולל משמאל ומימין לנקודה.' }), 7));
   }
 });
 
-/* ---- data: booklet questions 2.9 to 2.20 (original wording) ---- */
-const MQ = (id, set, kind, ans, stem, opts, per, shared) => ({ id, set, kind, ans, stem, opts: opts.map((t, i) => ({ l: 'אבגדה'[i], h: t })), per, shared: shared || '' });
-const SA = 'שאלות אמריקאיות א׳', SB = 'שאלות אמריקאיות ב׳', SC = 'שאלות אמריקאיות ג׳';
-const MCQDATA = {};
-[
-  MQ('3.9', SA, 'calc', 'ב', '<p>במאפיית ״שחר״ שני אופים. אופה א מייצר 6 לחמים או 3 עוגות ביום. אופה ב מייצר 4 לחמים או 8 עוגות ביום (כל אחד מקדיש את כל זמנו למוצר אחד). מהי העלות השולית של אופה ב בייצור לחם?</p>',
-    ['0.5', '2', '4', '8', '12'],
-    { 'א': 'זו העלות השולית של אופה ב בייצור עוגה: <span class="m">4 / 8</span>.', 'ב': '<span class="m">MC(x) = 8 / 4 = 2</span>. כל לחם עולה לאופה ב 2 עוגות.', 'ג': 'זו הכמות של הלחמים, לא העלות.', 'ד': 'זו כל כמות העוגות, לא העלות ללחם אחד.', 'ה': 'סכום הכמויות של אופה ב. אין לו משמעות כאן.' }),
-  MQ('3.10', SA, 'concept', 'ד', '<p>מהו יתרון יחסי של עובד בייצור מוצר מסוים?</p>',
-    ['היכולת לייצר ממנו את הכמות הגדולה ביותר', 'היותו העובד שנשלח אחרון לייצר אותו', 'היכולת לייצר יותר מכל עובד אחר בשני המוצרים', 'עלות שולית נמוכה ביותר בייצורו', 'עלות כוללת נמוכה ביותר בייצורו'],
-    { 'א': 'זה יתרון מוחלט.', 'ב': 'הפוך: בעל היתרון היחסי נשלח ראשון.', 'ג': 'זה יתרון מוחלט בשני המוצרים.', 'ד': 'זו ההגדרה.', 'ה': 'עלות כוללת תלויה בכמות. ההגדרה היא לפי עלות שולית.' }),
-  MQ('3.11', SA, 'calc', 'א', '<p>במשק שלושה עובדים. עובד 1 מייצר 4 יחידות x או 8 יחידות y. עובד 2 מייצר 6 יחידות x או 3 יחידות y. עובד 3 מייצר 2 יחידות x או 2 יחידות y. מהי העלות השולית בייצור y של העובד שנשלח ראשון לייצר y, מנקודה שבה כולם מייצרים x?</p>',
-    ['0.5', '1', '2', '4', '8'],
-    { 'א': 'עובד 1: <span class="m">MC(y) = 4 / 8 = 0.5</span>, הנמוכה ביותר, ולכן הוא ראשון.', 'ב': 'זו העלות של עובד 3, השני בתור.', 'ג': 'זו העלות של עובד 2 בייצור y: <span class="m">6 / 3</span>. הוא האחרון.', 'ד': 'זו כמות ה-x של עובד 1.', 'ה': 'זו כמות ה-y של עובד 1.' }),
-  MQ('3.12', SA, 'concept', 'ה', '<p>איזו טענה נכונה לגבי עקומת תמורה שנבנתה מנתוני עובדים?</p>',
-    ['בנקודה <span class="m">(0, Ymax)</span> כל העובדים מייצרים x.', 'הקטע הראשון משמאל שייך לעובד בעל העלות השולית הגבוהה ביותר בייצור x.', 'העקומה היא תמיד קו ישר, כי כל עובד מייצר בקצב קבוע.', 'עובד בעל יתרון מוחלט בשני המוצרים נשלח ראשון לייצר כל מוצר.', 'אם לעובדים יתרונות יחסיים שונים, השיפוע (בערך מוחלט) גדל משמאל לימין.'],
-    { 'א': 'שם כולם מייצרים y.', 'ב': 'הקטע הראשון שייך לעובד הזול ביותר בייצור x.', 'ג': 'כל קטע ישר, אבל השיפועים שונים, ולכן העקומה שבורה.', 'ד': 'הסדר נקבע לפי יתרון יחסי.', 'ה': 'העובדים הזולים נשלחים קודם, ולכן השיפוע גדל.' }),
-  MQ('3.13', SB, 'calc', 'ג', '<p>במשק שלושה עובדים. עובד א מייצר 8 יחידות x או 4 יחידות y. עובד ב מייצר 2 יחידות x או 3 יחידות y. עובד ג מייצר 4 יחידות x או 4 יחידות y. בונים את עקומת התמורה: מתחילים בנקודה שבה כולם מייצרים y, ומעבירים לייצור x את העובדים לפי העלות השולית שלהם בייצור x, מהנמוכה לגבוהה. מהי הנקודה שמתקבלת אחרי שהועברו שני העובדים הראשונים?</p>',
-    ['<span class="m">(8, 7)</span>', '<span class="m">(10, 4)</span>', '<span class="m">(12, 3)</span>', '<span class="m">(12, 7)</span>', '<span class="m">(14, 0)</span>'],
-    { 'א': 'זו הנקודה אחרי העובד הראשון בלבד.', 'ב': 'זה מתקבל אם מעבירים את א ואת ב. ב הוא היקר ביותר: <span class="m">MC(x) = 1.5</span>.', 'ג': 'א (<span class="m">0.5</span>) ואחריו ג (<span class="m">1</span>): <span class="m">x = 8 + 4 = 12</span>, <span class="m">y = 11 − 4 − 4 = 3</span>.', 'ד': 'x נכון, אבל y לא ירד בעובד השני.', 'ה': 'זו נקודת הקצה, אחרי שלושת העובדים.' }),
-  MQ('3.14', SB, 'calc', 'ד', '<p>עקומת התמורה של משק עוברת דרך הנקודות <span class="m">(0, 100)</span>, <span class="m">(20, 90)</span>, <span class="m">(60, 50)</span> ו-<span class="m">(100, 0)</span>, ומחוברת בקווים ישרים. המשק מייצר ביעילות 40 יחידות x. כמה יחידות y הוא מייצר?</p>',
-    ['30', '50', '60', '70', '90'],
-    { 'א': 'חישוב עם שיפוע של קטע אחר.', 'ב': 'זה y ב-<span class="m">x = 60</span>.', 'ג': 'הנחה שגויה של שיפוע 1.5 בקטע.', 'ד': 'הקטע בין 20 ל-60, שיפוע 1: <span class="m">y = 90 − (40 − 20) × 1 = 70</span>.', 'ה': 'זה y ב-<span class="m">x = 20</span>.' }),
-  MQ('3.15', SB, 'calc', 'ב', '<p>עקומת התמורה של משק עוברת דרך הנקודות <span class="m">(0, 100)</span>, <span class="m">(20, 90)</span>, <span class="m">(60, 50)</span> ו-<span class="m">(100, 0)</span>, ומחוברת בקווים ישרים. מהי העלות השולית לייצור היחידה ה-50 של y?</p>',
-    ['0.5', '0.8', '1', '1.25', '2'],
-    { 'א': 'זו העלות השולית של y בקטע הראשון.', 'ב': 'בנקודת שבר, y לפי הקטע מימין: שיפוע <span class="m">50 / 40 = 1.25</span>, ולכן <span class="m">MC(y) = 1 / 1.25 = 0.8</span>.', 'ג': 'זה לפי הקטע משמאל. ל-y לוקחים את הקטע מימין.', 'ד': 'זה השיפוע עצמו, בלי היפוך.', 'ה': 'זו העלות השולית של x בקטע הראשון.' }),
-  MQ('3.16', SB, 'concept', 'ג', '<p>עובד א מייצר 10 יחידות x או 10 יחידות y. עובד ב מייצר 4 יחידות x או 2 יחידות y. מי מהטענות הבאות נכונה?</p>',
-    ['לעובד א יתרון מוחלט בשני המוצרים, ויתרון יחסי בשני המוצרים.', 'לעובד ב יתרון יחסי בשני המוצרים.', 'לעובד א יתרון מוחלט בשני המוצרים; יתרון יחסי בייצור y לעובד א, ובייצור x לעובד ב.', 'לעובד ב יתרון מוחלט בייצור x ויתרון יחסי בייצור y.', 'לאף עובד אין יתרון יחסי, כי לעובד א עלות שולית 1 בשני המוצרים.'],
-    { 'א': 'עובד אחד לא יכול להיות זול יותר בשני המוצרים, כי העלויות הופכיות.', 'ב': 'אותה סיבה.', 'ג': '<span class="m">MC(x)</span>: א 1, ב 0.5. <span class="m">MC(y)</span>: א 1, ב 2. מוחלט: א בשניהם.', 'ד': 'ב מייצר פחות משני המוצרים.', 'ה': 'משווים בין העובדים. ב שונה מ-א, ולכן יש יתרון יחסי.' }),
-  MQ('3.17', SC, 'concept', 'א', '<p>בנקודת שבר של עקומת תמורה שנבנתה מקטעים ישרים, איך קובעים עלות שולית?</p>',
-    ['של x לפי שיפוע הקטע שמשמאל לנקודה, ושל y לפי ההופכי של שיפוע הקטע שמימין לנקודה', 'של x ושל y, שתיהן לפי שיפוע הקטע שמשמאל לנקודה', 'של x ושל y, שתיהן לפי שיפוע הקטע שמימין לנקודה', 'של x לפי הקטע שמימין לנקודה, ושל y לפי הקטע שמשמאל לנקודה', 'בנקודת שבר אין עלות שולית'],
-    { 'א': 'זה הכלל.', 'ב': 'ל-y לוקחים את הקטע מימין, וגם הופכים.', 'ג': 'ל-x לוקחים את הקטע משמאל.', 'ד': 'הפוך מהכלל.', 'ה': 'יש: היחידה שנמצאת בנקודה שייכת לקטע אחד.' }),
-  MQ('3.18', SC, 'calc', 'ב', '<p>במשק שלושה עובדים. עובד א מייצר 6 יחידות x או 3 יחידות y. עובד ב מייצר 2 יחידות x או 4 יחידות y. עובד ג מייצר 4 יחידות x או 6 יחידות y. המשק מייצר ביעילות 10 יחידות x. מהי העלות הממוצעת של x?</p>',
-    ['0.4', '0.9', '1.3', '1.5', '9'],
-    { 'א': 'זה <span class="m">4 / 10</span>: ה-y שנשאר חלקי x. זו לא העלות.', 'ב': 'א וג מייצרים x: <span class="m">y = 13 − 3 − 6 = 4</span>, <span class="m">TC = 9</span>, <span class="m">AC = 9 / 10 = 0.9</span>.', 'ג': 'זו העלות הכוללת חלקי 7, בלי משמעות.', 'ד': 'זו העלות השולית של עובד ג.', 'ה': 'זו העלות הכוללת, לפני החלוקה ב-10.' }),
-  MQ('3.19', SC, 'concept', 'ה', '<p>מדוע, בעקומת תמורה שנבנתה מעובדים שונים, העלות השולית של x גדלה ככל שמייצרים יותר x?</p>',
-    ['כי כל עובד מייצר פחות x מהעובד שלפניו', 'כי העובדים נשלחים לפי היתרון המוחלט שלהם', 'כי העלות הכוללת של x קבועה', 'כי שולחים קודם לייצר x את העובדים בעלי העלות השולית הגבוהה', 'כי שולחים קודם את העובדים בעלי העלות השולית הנמוכה, ובהמשך עובדים יקרים יותר'],
-    { 'א': 'הכמות לא קובעת את הסדר.', 'ב': 'הסדר לפי יתרון יחסי.', 'ג': 'העלות הכוללת עולה עם x.', 'ד': 'הפוך.', 'ה': 'זו ההתמחות.' }),
-  MQ('3.20', SC, 'concept', 'ד', '<p>עקומת תמורה בנויה משלושה קטעים ישרים שהשיפועים שלהם (בערך מוחלט) גדלים משמאל לימין. מה קורה לעלות השולית של y ככל שמייצרים יותר x?</p>',
-    ['היא גדלה, כמו העלות השולית של x', 'היא קבועה', 'היא תלויה רק בעובד הראשון', 'היא קטנה, כי היא ההופכי של שיפוע שגדל', 'אין קשר בין העלות השולית של y למיקום על העקומה'],
-    { 'א': 'היא ההופכי, ולכן זזה בכיוון ההפוך.', 'ב': 'השיפוע משתנה, ולכן גם היא.', 'ג': 'היא תלויה בקטע שבו נמצאים.', 'ד': 'שיפוע שגדל, ולכן ההופכי שלו קטן.', 'ה': 'יש קשר: הקטע קובע.' })
-].forEach(q => { MCQDATA[q.id] = q; });
-const EX3 = [
-  { id: '3.1', title: 'מטבלת עובדים לעלויות שוליות', s: ['w1', 'w2', 'h1'] },
-  { id: '3.2', title: 'יתרון יחסי מול יתרון מוחלט', s: ['w3', 'w5', 'h2'] },
-  { id: '3.3', title: 'בניית העקומה בארבעה שלבים', s: ['w1', 'w2', 'w3', 'w4', 'h1', 'h1b'] },
-  { id: '3.4', title: 'עלויות בנקודות שבר של עקומה שנבנתה', s: ['h3', 'h4', 'c4', 'c6'] },
-  { id: '3.5', title: 'כמו בשיעורי הבית: עלויות בין נקודות שבר', s: ['c5', 'h5'] },
-  { id: '3.6', title: 'עלות שולית משמאל ומימין לנקודה', s: ['f1'] },
-  { id: '3.7', title: 'מי מייצר מה בנקודה יעילה', s: ['w4'] },
-  { id: '3.8', title: 'תרגיל מסכם: עובדים, עלויות ובדיקת צירופים', s: ['h1', 'h1b', 'h3', 'h5', 'r1'] }
-];
-const Q3MAP = { '3.9': ['w2'], '3.10': ['w5', 'h2'], '3.11': ['w2', 'w3'], '3.12': ['w4'], '3.13': ['w3', 'w4'], '3.14': ['c5', 'h5'], '3.15': ['f1', 'h4'], '3.16': ['w5', 'h2'], '3.17': ['f1'], '3.18': ['h3', 'rr2'], '3.19': ['w4', 'rr4'], '3.20': ['c2', 'f1'] };
-const CLASS_Q3 = ['3.9', '3.10', '3.13', '3.15', '3.17', '3.19'], HW_Q3 = ['3.11', '3.12', '3.14', '3.16', '3.18', '3.20'];
-
-/* ---- quiz ---- */
 slide({
   id: 'quiz', kick: 'חידון', kc: 'p', title: 'חידון: שאלות מהחוברת', steps: 0,
   build(root, ctx) {
@@ -1845,7 +1740,7 @@ slide({
       root.appendChild(table(['שאלה', 'נוסח', 'התשובה', 'למה'], IDS.map(id => { const q = MCQDATA[id]; const a = q.opts.find(o => o.l === q.ans); return [h('b', id), plain(q.stem), h('span', { html: '<b class="ok-c">' + q.ans + '.</b> ' + a.h }), h('span', { html: q.per[q.ans] })]; })));
       return;
     }
-    const wrap = h('div.stack'); root.appendChild(h('p.lead', 'שש שאלות מהחוברת, בנוסח המקורי. בוחרים תשובה ומקבלים הסבר לכל אחת מהאפשרויות.')); root.appendChild(wrap);
+    const wrap = h('div.stack'); root.appendChild(h('p.lead', 'ארבע שאלות מהחוברת, על מה שלמדנו היום. בוחרים תשובה ומקבלים הסבר לכל אחת מהאפשרויות.')); root.appendChild(wrap);
     let idx = 0, score = 0; const res = [];
     function renderQ() {
       wrap.innerHTML = '';
@@ -1865,24 +1760,26 @@ slide({
   }
 });
 
-/* ---- homework map ---- */
 slide({
-  id: 'hwmap', kick: 'שיעורי הבית', kc: 'y', title: 'החוברת: איפה מסבירים כל תרגיל', steps: 0,
+  id: 'hwmap', kick: 'שיעורי הבית', kc: 'y', title: 'החוברת: תרגול והגשה', steps: 0,
   flash(root, key) { const c = root.querySelector('[data-key="' + key + '"]'); if (!c) return; c.scrollIntoView({ block: 'center' }); c.classList.remove('flash'); void c.offsetWidth; c.classList.add('flash'); },
   build(root, ctx) {
     const slides = Deck.slides; const num = id => slides.findIndex(d => d.id === id) + 1;
-    const chips = ids => h('div', { style: 'display:flex;flex-wrap:wrap;gap:5px' }, ids.map(sid => { const d = slides.find(z => z.id === sid); if (!d) return null; return ctx.static ? h('span.chip', 'שקף ' + num(sid)) : h('a.chip', { href: '#' + sid, title: d.title, onclick: ev => { ev.preventDefault(); Deck.go(sid); } }, num(sid) + '. ' + d.title); }));
+    const chips = ids => h('div', { style: 'display:flex;flex-wrap:wrap;gap:5px' }, ids.filter(num).map(sid => { const d = slides.find(z => z.id === sid); return ctx.static ? h('span.chip', 'שקף ' + num(sid)) : h('a.chip', { href: '#' + sid, title: d.title, onclick: ev => { ev.preventDefault(); Deck.go(sid); } }, num(sid) + '. ' + d.title); }));
     const plain = s => s.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
+    const badge = () => h('span.l2-sub', 'להגשה');
+    root.appendChild(h('div.card.l2-subm', h('h3', { style: 'margin:0 0 4px' }, '📮 להגשה עד ' + DUE3), h('div', { html: SUBNOTE3 + ' מי שהגיש את תרגילי שיעור 2 במקום הלא נכון, מוזמן להגיש אותם עכשיו במקום הנכון. זה בסדר, למרות האיחור הקל. בחוברת יש פתרון מלא ומפורט לכל התרגילים, גם לתרגילי ההגשה.' })));
     if (ctx.static) {
-      root.appendChild(table(['תרגיל', 'נושא', 'שקפים'], [[h('b', '2.2, 2.3, 2.4, 2.16, 2.17'), 'פתיחה: חזרה על הכלל משיעור 2', 'שקף ' + ['rr1', 'rr2', 'rr3', 'rr4'].map(num).join(', ')]].concat(EX3.map(e => [h('b', e.id), e.title, 'שקף ' + e.s.filter(num).map(num).join(', ')]))));
-      root.appendChild(h('div', { style: 'margin-top:8px' }, table(['שאלה', 'שקפים', 'שאלה', 'שקפים'], CLASS_Q3.map((q, i) => [h('b', q + ' (כיתה)'), 'שקף ' + Q3MAP[q].filter(num).map(num).join(', '), h('b', HW_Q3[i] + ' (בית)'), 'שקף ' + Q3MAP[HW_Q3[i]].filter(num).map(num).join(', ')]))));
+      root.appendChild(table(['תרגיל', 'נושא', 'שקפים'], EX3.map(e => [h('b', e.id + (e.sub ? ' (להגשה)' : '')), e.title, 'שקף ' + e.s.filter(num).map(num).join(', ')])));
+      root.appendChild(h('div', { style: 'margin-top:8px' }, table(['שאלה', 'סוג', 'שקפים'], CLASS_Q3.concat(HW_Q3, SUB_Q3).sort((a, b) => parseFloat(a.slice(2)) - parseFloat(b.slice(2))).map(q => [h('b', q), SUB_Q3.includes(q) ? 'להגשה' : CLASS_Q3.includes(q) ? 'בכיתה (חידון)' : 'לבית', 'שקף ' + Q3MAP[q].filter(num).map(num).join(', ')]))));
       return;
     }
-    const g1 = h('div.hwg'); EX3.forEach(e => g1.appendChild(h('div.hwc', { 'data-key': e.id }, h('b', `תרגיל ${e.id}: ${e.title}`), h('div.go', chips(e.s)))));
+    const g1 = h('div.hwg'); EX3.forEach(e => g1.appendChild(h('div.hwc' + (e.sub ? '.sub' : ''), { 'data-key': e.id }, h('b', `תרגיל ${e.id}: ${e.title}`, e.sub ? badge() : null), h('div.go', chips(e.s)))));
     const g2 = h('div.hwg');
-    CLASS_Q3.concat(HW_Q3).sort((a, b) => parseFloat(a.slice(2)) - parseFloat(b.slice(2))).forEach(id => {
-      const hw = HW_Q3.includes(id); const q = MCQDATA[id];
-      const card = h('div.hwc', { 'data-key': id }, h('b', `שאלה ${id}`, h('span.hint', { style: 'margin-inline-start:8px' }, hw ? 'לבית' : 'בכיתה (חידון)')), h('div.tp', plain(q.stem).slice(0, 78) + '…'), h('div.go', chips(Q3MAP[id])));
+    CLASS_Q3.concat(HW_Q3, SUB_Q3).sort((a, b) => parseFloat(a.slice(2)) - parseFloat(b.slice(2))).forEach(id => {
+      const sub = SUB_Q3.includes(id), hw = HW_Q3.includes(id);
+      const stem = sub ? SUBQ3[id] : MCQDATA[id].stem;
+      const card = h('div.hwc' + (sub ? '.sub' : ''), { 'data-key': id }, h('b', `שאלה ${id}`, sub ? badge() : h('span.hint', { style: 'margin-inline-start:8px' }, hw ? 'לבית' : 'בכיתה (חידון)')), h('div.tp', plain(stem).slice(0, 78) + '…'), h('div.go', chips(Q3MAP[id])));
       if (hw) {
         const box = h('div', { style: 'display:none;margin-top:8px' }); let built = false;
         const b = h('button.btn', { type: 'button', style: 'margin-top:6px' }, 'לפתור כאן');
@@ -1891,10 +1788,8 @@ slide({
       }
       g2.appendChild(card);
     });
-    const RR = [['2.3, סעיפים א ו-ב', 'ממוצע ציונים: ציון מעל הממוצע מעלה אותו', ['rr1']], ['2.3, סעיף ג', 'אותו כלל בייצור', ['rr2']], ['2.2 ושאלה 2.16', 'השולית עלתה, והממוצעת לא זזה', ['rr3']], ['2.4 סעיף ה ושאלה 2.17', 'הכלל על עקומה קעורה ועל קו ישר', ['rr4']]];
-    const g0 = h('div.hwg'); RR.forEach(r => g0.appendChild(h('div.hwc', h('b', 'חזרה: ' + r[0]), h('div.tp', r[1]), h('div.go', chips(r[2])))));
-    root.append(h('h3', { style: 'margin:0 0 6px' }, 'פתיחה: חזרה על הכלל משיעור 2'), g0, h('h3', { style: 'margin:12px 0 6px' }, 'תרגילים 3.1 עד 3.8'), g1, h('h3', { style: 'margin:12px 0 6px' }, 'שאלות אמריקאיות 3.9 עד 3.20'), g2,
-      h('div.card.ok', { style: 'margin-top:12px' }, h('b', 'חוברת תרגילי הבית'), h('div', { style: 'margin-top:6px' }, h('a.btn', { href: '../../materials/homework-booklet.pdf?v=20261107', target: '_blank', rel: 'noopener' }, 'חוברת תרגילי הבית עם הפתרונות (PDF)'))));
+    root.append(h('h3', { style: 'margin:12px 0 6px' }, 'תרגילים 3.1 עד 3.7'), g1, h('h3', { style: 'margin:12px 0 6px' }, 'שאלות אמריקאיות 3.8 עד 3.17'), g2,
+      h('div.card.ok', { style: 'margin-top:12px' }, h('b', 'חוברת תרגילי הבית'), h('div', { style: 'margin-top:6px' }, h('a.btn', { href: '../../materials/homework-booklet.pdf?v=20261110', target: '_blank', rel: 'noopener' }, 'חוברת תרגילי הבית עם הפתרונות (PDF)'))));
   }
 });
 
