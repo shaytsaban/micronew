@@ -1176,6 +1176,119 @@ const F = (a, b) => fr(a, b);
 const nm = v => fmt(v);
 
 
+/* ===== lesson 3: cover style, fit to large screens, memes ===== */
+(function () {
+  const css = `
+  @media screen{
+    .slide .sbody{zoom:var(--fitz,1)}
+  }
+  .cv{-webkit-print-color-adjust:exact;print-color-adjust:exact;padding:0!important;overflow:hidden;background:radial-gradient(1200px 600px at 75% 0%,#22407a 0%,#0f1d3a 45%,#0a1428 100%)}
+  .cv .sbody{zoom:1;height:100%}
+  .pslide.cv .pz{width:100%!important;height:100%;transform:none!important}
+  .pslide.cv .cvw{height:714px;padding:40px 70px}
+  .pslide.cv .cvw h1{font-size:72px}.pslide.cv .cvw .st{font-size:21px}.pslide.cv .cvw .tw{bottom:70px;left:60px;width:230px}
+  .pslide.cv .pfoot{color:#c9d6f2}
+  .cv .sh,.cv .stail{display:none!important}
+  .cvw{position:relative;height:100%;display:flex;flex-direction:column;justify-content:center;padding:clamp(24px,5vw,90px) clamp(24px,7vw,130px);color:#fff;overflow:hidden}
+  .cvw .orb{position:absolute;border-radius:50%;filter:blur(2px);opacity:.95}
+  .cvw .o1{width:34vmin;height:34vmin;left:-8vmin;top:-10vmin;background:radial-gradient(circle at 35% 35%,#5fe0cf,#0d8f84)}
+  .cvw .o2{width:13vmin;height:13vmin;left:33%;bottom:7%;background:radial-gradient(circle at 35% 35%,#ffd37a,#e8960c)}
+  .cvw .o3{width:24vmin;height:24vmin;left:14%;bottom:6%;background:radial-gradient(circle at 35% 35%,#a996ff,#5b3fd6)}
+  .cvw .kl{font-weight:800;color:#ff8a6a;font-size:clamp(15px,1.45vw,22px);display:flex;align-items:center;gap:12px;position:relative}
+  .cvw .kl::before{content:"";width:34px;height:4px;border-radius:4px;background:#ff6a4d}
+  .cvw h1{font-size:clamp(44px,6.6vw,104px);line-height:1.02;margin:14px 0 10px;font-weight:900;position:relative}
+  .cvw h1 .ac{color:#7de8d8;display:block}
+  .cvw .st{font-size:clamp(17px,1.75vw,27px);color:#c9d6f2;max-width:52ch;position:relative;line-height:1.5}
+  .cvw .chips{display:flex;flex-wrap:wrap;gap:10px;margin-top:22px;position:relative;max-width:1100px}
+  .cvw .chips span{border:1.5px solid rgba(255,255,255,.28);background:rgba(255,255,255,.08);border-radius:99px;padding:7px 16px;font-weight:700;font-size:clamp(14px,1.25vw,19px)}
+  .cvw .ft{margin-top:auto;padding-top:26px;color:#c9d6f2;font-size:clamp(14px,1.25vw,19px);position:relative}
+  .cvw .ft b{color:#fff}
+  .cvw .tw{position:absolute;left:clamp(24px,6vw,110px);bottom:clamp(60px,12vh,140px);width:clamp(180px,22vw,330px);background:#fff;color:#16213a;border-radius:20px;padding:12px 14px 14px;box-shadow:0 26px 60px rgba(0,0,0,.45);transform:rotate(-4deg);text-align:center}
+  .cvw .tw svg{width:46%;height:auto}
+  .mmc{display:inline-flex;flex-direction:column;align-items:center;background:#fff;border:3px solid var(--ink);border-radius:16px;padding:8px 12px 10px;max-width:300px;box-shadow:0 10px 26px rgba(0,0,0,.12)}
+  .mmc svg{width:120px;height:120px}
+  .mmt,.mmb,.meme .mt,.meme .mb{font-family:Heebo,sans-serif;font-weight:900;line-height:1.1;text-align:center;color:#fff;-webkit-text-stroke:1.2px #000;paint-order:stroke fill;text-shadow:2px 2px 0 #000,-1px -1px 0 #000,1px -1px 0 #000,-1px 1px 0 #000}
+  .mmt{font-size:21px}.mmb{font-size:18px}
+  .meme{position:fixed;inset:0;z-index:90;display:flex;align-items:center;justify-content:center;pointer-events:none;opacity:0;transition:opacity .25s}
+  .meme.on{opacity:1;pointer-events:auto;background:rgba(8,16,31,.35)}
+  .meme .mm{background:#fff;border-radius:22px;padding:14px 22px 16px;box-shadow:0 30px 80px rgba(0,0,0,.45);display:flex;flex-direction:column;align-items:center;width:440px;max-width:86vw;transform:scale(.3) rotate(-8deg)}
+  .meme.on .mm{animation:mpop .55s cubic-bezier(.2,.9,.3,1.4) forwards}
+  @keyframes mpop{to{transform:none}}
+  .meme.bad .mm{border:5px solid #e0454f}.meme.good .mm{border:5px solid #25a65f}
+  .meme svg{width:190px;height:190px}
+  .meme .mt{font-size:31px}.meme .mb{font-size:26px}
+  @media print{.meme{display:none!important}}
+  `;
+  const st = document.createElement('style'); st.textContent = css; document.head.appendChild(st);
+  /* the slides are laid out for 1366 x 768; on larger screens they grow to fill it */
+  function fit() { const z = Math.max(1, Math.min(window.innerWidth / 1366, window.innerHeight / 768, 1.6)); document.documentElement.style.setProperty('--fitz', z.toFixed(3)); }
+  fit(); window.addEventListener('resize', fit);
+})();
+const ART = {"owl": "<ellipse cx=\"80\" cy=\"92\" rx=\"54\" ry=\"58\" fill=\"#8a5a2b\"/><ellipse cx=\"80\" cy=\"104\" rx=\"34\" ry=\"38\" fill=\"#e8c39a\"/><circle cx=\"58\" cy=\"66\" r=\"22\" fill=\"#fff\" stroke=\"#1b2d55\" stroke-width=\"5\"/><circle cx=\"102\" cy=\"66\" r=\"22\" fill=\"#fff\" stroke=\"#1b2d55\" stroke-width=\"5\"/><path d=\"M80 66h0\" stroke=\"#1b2d55\" stroke-width=\"5\"/><circle cx=\"58\" cy=\"66\" r=\"9\" fill=\"#111\"/><circle cx=\"102\" cy=\"66\" r=\"9\" fill=\"#111\"/><path d=\"M72 86l8 12 8-12z\" fill=\"#e8960c\"/><ellipse cx=\"80\" cy=\"120\" rx=\"10\" ry=\"12\" fill=\"#5b3a1a\"/><path d=\"M30 40l14 14M130 40l-14 14\" stroke=\"#5b3a1a\" stroke-width=\"7\" stroke-linecap=\"round\"/>", "mug": "<path d=\"M34 50h80v72q0 22-22 22H56q-22 0-22-22z\" fill=\"#fff\" stroke=\"#1b2d55\" stroke-width=\"5\"/><path d=\"M114 66q26 0 26 22t-26 22\" fill=\"none\" stroke=\"#1b2d55\" stroke-width=\"7\"/><circle cx=\"62\" cy=\"88\" r=\"5\" fill=\"#111\"/><circle cx=\"88\" cy=\"88\" r=\"5\" fill=\"#111\"/><path d=\"M60 112q14-10 30 0\" fill=\"none\" stroke=\"#111\" stroke-width=\"4\" stroke-linecap=\"round\"/><path d=\"M128 24q9 14 0 20q-9-6 0-20z\" fill=\"#58b8e0\"/><path d=\"M56 40q-8-12 0-24M76 40q-8-12 0-24M96 40q-8-12 0-24\" fill=\"none\" stroke=\"#b8c6e8\" stroke-width=\"4\" stroke-linecap=\"round\"/>", "trophy": "<path d=\"M50 24h60v40q0 30-30 30T50 64z\" fill=\"#ffd37a\" stroke=\"#a86703\" stroke-width=\"5\"/><path d=\"M50 36H28q0 28 26 30M110 36h22q0 28-26 30\" fill=\"none\" stroke=\"#a86703\" stroke-width=\"5\"/><path d=\"M80 94v22M56 140h48l-6-24H62z\" fill=\"#e8960c\" stroke=\"#a86703\" stroke-width=\"4\"/><circle cx=\"70\" cy=\"52\" r=\"4\" fill=\"#111\"/><circle cx=\"90\" cy=\"52\" r=\"4\" fill=\"#111\"/><path d=\"M68 66q12 9 24 0\" fill=\"none\" stroke=\"#111\" stroke-width=\"4\" stroke-linecap=\"round\"/><path d=\"M18 18l8 8M142 18l-8 8M80 4v10\" stroke=\"#ff6a4d\" stroke-width=\"5\" stroke-linecap=\"round\"/>", "cat": "<path d=\"M34 60l-6-38 30 22M126 60l6-38-30 22\" fill=\"#f3a92c\" stroke=\"#a86703\" stroke-width=\"4\" stroke-linejoin=\"round\"/><ellipse cx=\"80\" cy=\"88\" rx=\"54\" ry=\"48\" fill=\"#f3a92c\" stroke=\"#a86703\" stroke-width=\"4\"/><circle cx=\"60\" cy=\"80\" r=\"15\" fill=\"#fff\" stroke=\"#1b2d55\" stroke-width=\"4\"/><circle cx=\"100\" cy=\"80\" r=\"15\" fill=\"#fff\" stroke=\"#1b2d55\" stroke-width=\"4\"/><path d=\"M75 80h10\" stroke=\"#1b2d55\" stroke-width=\"4\"/><circle cx=\"62\" cy=\"82\" r=\"6\" fill=\"#111\"/><circle cx=\"98\" cy=\"82\" r=\"6\" fill=\"#111\"/><path d=\"M74 100l6 6 6-6\" fill=\"#ff8fa6\"/><path d=\"M80 106v6M70 116q10 6 20 0\" fill=\"none\" stroke=\"#111\" stroke-width=\"3\" stroke-linecap=\"round\"/><path d=\"M28 98h22M28 108h22M110 98h22M110 108h22\" stroke=\"#a86703\" stroke-width=\"2.5\"/><rect x=\"58\" y=\"130\" width=\"44\" height=\"26\" rx=\"5\" fill=\"#1b2d55\"/><rect x=\"63\" y=\"134\" width=\"34\" height=\"8\" rx=\"2\" fill=\"#dff5f2\"/>", "sweat": "<circle cx=\"80\" cy=\"84\" r=\"58\" fill=\"#ffd37a\" stroke=\"#a86703\" stroke-width=\"4\"/><path d=\"M48 66q10-8 20 0M92 66q10-8 20 0\" fill=\"none\" stroke=\"#111\" stroke-width=\"4\" stroke-linecap=\"round\"/><circle cx=\"58\" cy=\"80\" r=\"5\" fill=\"#111\"/><circle cx=\"102\" cy=\"80\" r=\"5\" fill=\"#111\"/><path d=\"M56 112q24-14 48 0\" fill=\"none\" stroke=\"#111\" stroke-width=\"5\" stroke-linecap=\"round\"/><path d=\"M130 40q10 16 0 24q-10-8 0-24zM24 56q8 12 0 18q-8-6 0-18z\" fill=\"#58b8e0\"/>", "cry": "<circle cx=\"80\" cy=\"84\" r=\"58\" fill=\"#ffd37a\" stroke=\"#a86703\" stroke-width=\"4\"/><path d=\"M50 70l18 6M110 70l-18 6\" stroke=\"#111\" stroke-width=\"5\" stroke-linecap=\"round\"/><path d=\"M58 82q0 40-6 60M102 82q0 40 6 60\" fill=\"none\" stroke=\"#58b8e0\" stroke-width=\"9\" stroke-linecap=\"round\"/><ellipse cx=\"80\" cy=\"114\" rx=\"16\" ry=\"12\" fill=\"#7a2a3a\"/>", "party": "<path d=\"M40 140l40-110 40 110z\" fill=\"#ff6a4d\" stroke=\"#b8391f\" stroke-width=\"4\" stroke-linejoin=\"round\"/><path d=\"M52 108l56 0M62 80l36 0\" stroke=\"#ffd37a\" stroke-width=\"6\"/><circle cx=\"68\" cy=\"96\" r=\"4\" fill=\"#111\"/><circle cx=\"92\" cy=\"96\" r=\"4\" fill=\"#111\"/><path d=\"M68 112q12 10 24 0\" fill=\"none\" stroke=\"#111\" stroke-width=\"4\" stroke-linecap=\"round\"/><g stroke-width=\"5\" stroke-linecap=\"round\"><path d=\"M80 22v-12\" stroke=\"#25a65f\"/><path d=\"M60 26l-10-10\" stroke=\"#6d4df2\"/><path d=\"M100 26l10-10\" stroke=\"#e8960c\"/></g><circle cx=\"24\" cy=\"40\" r=\"5\" fill=\"#6d4df2\"/><circle cx=\"138\" cy=\"34\" r=\"5\" fill=\"#25a65f\"/><circle cx=\"140\" cy=\"70\" r=\"4\" fill=\"#ff6a4d\"/>", "ghost": "<path d=\"M30 150V76q0-52 50-52t50 52v74l-12-12-13 12-12-12-13 12-12-12-13 12-12-12z\" fill=\"#fff\" stroke=\"#1b2d55\" stroke-width=\"5\" stroke-linejoin=\"round\"/><ellipse cx=\"62\" cy=\"76\" rx=\"9\" ry=\"13\" fill=\"#111\"/><ellipse cx=\"98\" cy=\"76\" rx=\"9\" ry=\"13\" fill=\"#111\"/><ellipse cx=\"80\" cy=\"108\" rx=\"10\" ry=\"13\" fill=\"#111\"/>"};
+const MEMES = {
+  win: [['trophy', 'הממוצעת זזה לכיוון השולית', 'בדיוק כמו בציונים'], ['party', 'שולית מעל הממוצעת', 'והממוצעת עולה. קלאסיקה'], ['cat', 'עלות שולית חושבה', 'והעובדת הזולה כבר בדרך'],
+        ['owl', 'ויתור, שיפוע, עלות', 'הכלכלן שבכם התעורר'], ['trophy', 'יתרון יחסי בפעולה', 'כל אחד במה שזול לו'], ['party', 'נכון!', 'אדם סמית׳ שולח לייק']],
+  fail: [['owl', 'רגע, רגע', 'משווים לממוצעת שלפני'], ['sweat', 'לא בדיוק', 'מה ויתרנו, ובשביל מה?'], ['ghost', 'עוד ניסיון', 'x משמאל, y מימין'], ['mug', 'קפה, ונסו שוב', 'השיפוע ל-x, ההופכי ל-y']]
+};
+let memeT = null;
+function MEME(kind) {
+  let box = document.getElementById('meme'); if (!box) { box = document.createElement('div'); box.id = 'meme'; box.className = 'meme'; document.body.appendChild(box); box.addEventListener('click', () => box.classList.remove('on')); }
+  const L = MEMES[kind]; MEME.last = MEME.last || {}; let j = Math.floor(Math.random() * L.length); if (L.length > 1 && j === MEME.last[kind]) j = (j + 1) % L.length; MEME.last[kind] = j; const mm = L[j];
+  box.className = 'meme ' + (kind === 'fail' ? 'bad' : 'good');
+  box.innerHTML = '<div class="mm"><div class="mt">' + mm[1] + '</div><svg viewBox="0 0 160 160" aria-hidden="true">' + ART[mm[0]] + '</svg><div class="mb">' + mm[2] + '</div></div>';
+  void box.offsetWidth; box.classList.add('on'); clearTimeout(memeT); memeT = setTimeout(() => box.classList.remove('on'), kind === 'fail' ? 2400 : 2800);
+}
+/* a meme card inside a slide: art, top line, bottom line */
+function memeCard(art, top, bottom) { return h('div.mmc', h('div.mmt', top), h('div', { html: '<svg viewBox="0 0 160 160" aria-hidden="true">' + ART[art] + '</svg>' }), h('div.mmb', bottom)); }
+/* answers in the deck trigger a meme: a correct answer always, a wrong one on the first try and then every third */
+(function () {
+  const misses = new WeakMap();
+  function miss(el) { const n = (misses.get(el) || 0) + 1; misses.set(el, n); if (n === 1 || n % 3 === 0) MEME('fail'); }
+  document.addEventListener('click', ev => {
+    const qb = ev.target.closest('.l2-qc .ops .btn'), tb = ev.target.closest('.tryit .ansrow .btn.pri'), ob = ev.target.closest('.qz .op');
+    if (!qb && !tb && !ob) return;
+    setTimeout(() => {
+      if (qb) { const box = qb.closest('.l2-qc'); if (qb.classList.contains('right')) { if (!box.dataset.memed) { box.dataset.memed = 1; MEME('win'); } } else if (qb.classList.contains('wrong')) miss(box); }
+      if (tb) { const t = tb.closest('.tryit'); const fb = [...t.children].find(e => e.classList && e.classList.contains('fb')); if (!fb) return; if (fb.classList.contains('ok')) { if (!t.dataset.memed) { t.dataset.memed = 1; MEME('win'); } } else if (fb.classList.contains('no')) miss(t); }
+      if (ob) { if (ob.classList.contains('pick')) { if (ob.classList.contains('ok')) MEME('win'); else MEME('fail'); } }
+    }, 30);
+  }, true);
+})();
+
+/* ===== lesson 3 cover ===== */
+slide({
+  id: 'cover', kick: '', title: 'שיעור 3: בונים את עקומת התמורה מנתוני העובדים', steps: 0,
+  build(root, ctx) {
+    ctx.container.classList.add('cv');
+    const pg = ctx.container.parentElement; if (pg && pg.classList.contains('pslide')) pg.classList.add('cv');
+    const chips = ['📮 איפה מגישים', '🔁 חיזוק: שולית מול ממוצעת', '👷 עלות שולית של עובדת', '🪜 בנייה בארבעה שלבים', '⚖️ יתרון יחסי ויתרון מוחלט', '📐 עלויות על העקומה שנבנתה', '🎯 חידון: שש שאלות'];
+    root.appendChild(h('div.cvw', h('div.orb.o1'), h('div.orb.o2'), h('div.orb.o3'),
+      h('div.kl', 'מבוא למיקרו כלכלה · שיעור 3 · 10.11.2026'),
+      h('h1', 'בונים את עקומת התמורה', h('span.ac', 'מנתוני העובדים')),
+      h('div.st', 'פותחים בחיזוק הכלל בין עלות שולית לעלות ממוצעת. אחר כך בונים עקומה בארבעה שלבים: עלות שולית של כל עובדת, דירוג, יתרון יחסי ושרטוט.'),
+      h('div.chips', chips.map(c => h('span', c))),
+      h('div.tw', h('div.mmt', { style: 'color:#fff' }, 'כשהשולית מעל הממוצעת'), h('div', { html: '<svg viewBox="0 0 160 160" aria-hidden="true">' + ART.party + '</svg>' }), h('div.mmb', 'הממוצעת: אני בדרך למעלה')),
+      h('div.ft', { html: '<b>ד״ר שי צבאן</b> · המרכז האקדמי רופין · סמסטר א׳ תשפ״ז' })));
+  }
+});
+
+/* ===== lesson 3, second slide: where the submission instructions are published, and where to submit ===== */
+slide({
+  id: 'subm', kick: 'לפני שמתחילים', kc: 'y', title: 'תרגילי ההגשה: איפה ההנחיות, ולאן מגישים',
+  build(root, ctx) {
+    const right = h('div.stack.l2-tight');
+    right.appendChild(rv(L2.card('x', '1. איפה מתפרסמות ההנחיות', 'באתר הקורס, בכרטיס של כל שיעור, בתיבה הצהובה <b>״להגשה״</b> (מסומנת באדום בצילום המסך). שם כתוב מה מגישים ועד מתי. אותם תרגילים מסומנים <b>״להגשה״</b> גם בחוברת התרגילים.<div class="l2-note" style="margin-top:4px">shaytsaban.github.io/micronew</div>'), 1));
+    right.appendChild(rv(L2.card('tc', '2. לאן מגישים', 'במודל הכללי של הקורס, <b>בתיבת ההגשה שלי, באזור שלי, שנמצא הכי למעלה</b> בעמוד הקורס. לא באזור של מר שלומי כץ.'), 2));
+    right.appendChild(rv(L2.card('ok', '3. ההגשה של שיעור 2', 'תרגילים 2.6 ו-2.7, ושאלות אמריקאיות 2.18 עד 2.22 מהחוברת, עד ' + m('10.11.2026') + '.'), 3));
+    right.appendChild(rv(h('div.card.y', { html: '<b>הפעם:</b> מי שהגיש מטלה שגויה, ההגשה שלו תתקבל, כל עוד היא הוגשה לתיבה שלי, באזור שלי במודל (הכי למעלה), ולא לאזור של מר שלומי כץ.' }), 4));
+    right.appendChild(rv(memeCard('owl', 'ההנחיות: באתר', 'ההגשה: במודל, בתיבה שלי'), 4));
+    const img = h('img', { src: 'img/submit-site.png', alt: 'צילום מסך מאתר הקורס: כרטיס שיעור 2, ותיבת ההגשה מסומנת באדום', style: 'width:100%;border:1px solid var(--line);border-radius:12px;display:block' });
+    const left = h('div.stack', rv(img, 1), rv(h('div.l2-note', 'צילום מסך מאתר הקורס, כרטיס שיעור 2. ההנחיות להגשה מסומנות באדום.'), 1));
+    root.prepend(h('p.lead', 'שתי שאלות שעלו: איפה כתוב מה להגיש, ולאן מגישים. התשובה בארבעה צעדים.'));
+    root.appendChild(h('div.cols', right, left));
+  }
+});
+
 /* ===== lesson 3: recap of lesson 2 and map ===== */
 slide({
   id: 'r3', kick: 'חזרה', kc: 't', title: 'חזרה על שיעור 2: עלות שולית ועלות ממוצעת', mantra: ['k1', 'k2'],
@@ -1276,6 +1389,7 @@ slide({
     const right = h('div.stack.l2-tight');
     right.appendChild(rv(L2.card('x', 'שורה 3', 'השולית <b>ירדה</b> מ-6 ל-5, והממוצעת ירדה. עד כאן זה נראה כאילו הן זזות יחד.'), 3));
     right.appendChild(rv(L2.card('mc', 'שורה 4', 'השולית <b>עלתה</b> מ-5 ל-7, אבל הממוצעת <b>לא זזה</b>: ' + m(F('21 + 7', '4') + ' = 7') + '. השולית 7 שווה לממוצעת 7 שלפניה.'), 4));
+    right.appendChild(rv(h('div', { style: 'display:flex;justify-content:center' }, memeCard('sweat', 'השולית עלתה מ-5 ל-7', 'הממוצעת: לא זזתי מילימטר')), 4));
     right.appendChild(rv(fmBox('ac', 'מה קובע', 'את הכיוון קובע <b>היחס</b> בין השולית לממוצעת שלפניה, לא הכיוון שבו השולית זזה.'), 7));
     right.appendChild(rv(qc(ctx, 'חוברת, שאלה 2.16. העלות הממוצעת של x עלתה כשהמשק הוסיף יחידה אחת. מה בהכרח נכון?', [
       { t: 'העלות השולית של היחידה הנוספת גבוהה מהעלות השולית של היחידה שלפניה', why: 'לא בהכרח. עלויות שוליות 2, 10, 8: הממוצעת עולה מ-6 ל-6.67, אף שהשולית ירדה מ-10 ל-8.' },
@@ -1470,6 +1584,7 @@ slide({
     right.appendChild(rv(qc(ctx, 'ובאותו משק, למי יתרון יחסי בייצור y?', [
       { t: 'לעובד א', ok: true, why: m('MC(y) = 1') + ' אצל א, מול ' + m(F('3', '1') + ' = 3') + ' אצל ב.' },
       { t: 'לעובד ב', why: 'כל יחידת y של ב עולה 3 יחידות x. זו העלות הגבוהה.' }]), 6));
+    right.appendChild(rv(h('div', { style: 'display:flex;justify-content:center' }, memeCard('cat', 'מייצרת הכי הרבה? יפה', 'אבל נשלחת מי שמוותרת הכי מעט')), 4));
     root.appendChild(h('div.cols', left, right));
   }
 });
@@ -1624,29 +1739,44 @@ slide({
         ['ג. ' + m('100Y'), 'A', 'AB, מימין', m(F('70', '20') + ' = 3.5')],
         ['ד. ' + m('50Y'), 'C', 'CD, מימין', m(F('1', '1') + ' = 1')]]) });
     T.labelled('a', 'א. ' + m('MC(70X)'), 2 / 7, { tol: 0.006 }); T.labelled('b', 'ב. ' + m('MC(120X)'), 0.6); T.labelled('c', 'ג. ' + m('MC(100Y)'), 3.5); T.labelled('d', 'ד. ' + m('MC(50Y)'), 1);
-    const left = h('div.stack', T.el, rv(L2.card('y', 'למה x משמאל ו-y מימין?', 'היחידה ה-70 של x היא האחרונה שנוספה בדרך מ-A ל-B, כלומר בקטע שמשמאל. היחידה ה-50 של y היא האחרונה שנוספה בדרך מ-D ל-C, כלומר בקטע שמימין.'), 1));
+    const left0 = [];
+    [1, 2, 3, 4].forEach(k => left0.push(rv(h('span', { style: 'display:none' }), k)));
+    const left = h('div.stack', T.el, ...left0, rv(L2.card('y', 'למה x משמאל ו-y מימין?', 'היחידה ה-70 של x היא האחרונה שנוספה בדרך מ-A ל-B, כלומר בקטע שמשמאל. היחידה ה-50 של y היא האחרונה שנוספה בדרך מ-D ל-C, כלומר בקטע שמימין.'), 5), rv(h('div', { style: 'display:flex;justify-content:center' }, memeCard('ghost', 'x מסתכל אחורה, y קדימה', 'כל אחד והקטע שלו')), 5));
     const host = h('div');
     root.appendChild(h('div.cols', left, host));
     const ch = PPC.chart(host, { w: 520, h: 380, xmax: 185, ymax: 112, xLabel: 'X', yLabel: 'Y', ticksX: [70, 120, 170], ticksY: [50, 80, 100] });
-    ch.curve(P); P.forEach((p, i) => ch.dot(p[0], p[1], { cls: 'gold', label: L[i], r: 6, pos: i === 3 ? 'n' : 'ne' }));
+    const SEG = [null, [0, 1, 'א. 70X: הקטע משמאל ל-B, AB'], [1, 2, 'ב. 120X: הקטע משמאל ל-C, BC'], [0, 1, 'ג. 100Y: הקטע מימין ל-A, AB'], [2, 3, 'ד. 50Y: הקטע מימין ל-C, CD']];
+    const cap = h('div.fb.nt', 'לחיצה אחר לחיצה: לכל סעיף, הקטע שקובע את העלות השולית.');
+    host.appendChild(cap);
+    function draw(k) {
+      ['curve', 'pts', 'ann'].forEach(c => ch.clear(c));
+      ch.curve(P); P.forEach((p, i) => ch.dot(p[0], p[1], { cls: 'gold', label: L[i], r: 6, pos: i === 3 ? 'n' : 'ne' }));
+      const sg = SEG[Math.min(k, 4)];
+      if (sg) { PPC.el('path', { class: 'seg-hl', d: `M${ch.sx(P[sg[0]][0])},${ch.sy(P[sg[0]][1])} L${ch.sx(P[sg[1]][0])},${ch.sy(P[sg[1]][1])}` }, ch.layer('ann')); cap.innerHTML = '<b>' + sg[2] + '</b>'; }
+      else cap.textContent = 'לחיצה אחר לחיצה: לכל סעיף, הקטע שקובע את העלות השולית.';
+    }
+    draw(ctx.static ? 0 : 0);
+    ctx.onStep(k => draw(k));
   }
 });
 
 /* ===== summary ===== */
 slide({
-  id: 'sum', kick: 'סיכום', kc: 't', title: 'ריכוז נוסחאות וכללים', steps: 0,
+  id: 'sum', kick: 'סיכום', kc: 't', title: 'ריכוז נוסחאות וכללים',
   build(root, ctx) {
     const g = h('div.l2-defs');
     const c = (cls, t, f, mean) => h('div.card.' + cls, h('h3', t), fmBox(cls, '', f), h('div.l2-note', { html: mean }));
-    g.append(
+    g.append(...[
       c('tc', 'עלות כוללת', m('TC(x) = Ymax − Y') + '<br>' + m('TC(y) = Xmax − X'), 'כל הויתור על המוצר האחר.'),
       c('ac', 'עלות ממוצעת', m('AC(x) = ' + F('TC(x)', 'X')) + ' &nbsp; ' + m('AC(y) = ' + F('TC(y)', 'Y')), 'בכמות אפס אין עלות ממוצעת.'),
       c('mc', 'עלות שולית', m('MC(x) = ' + F('|ΔY|', 'ΔX')) + ' &nbsp; ' + m('MC(y) = ' + F('ΔX', '|ΔY|')), 'בקטע ישר: השיפוע, ול-y ההופכי שלו.'),
       c('mc', 'עלות שולית של עובד', m('MC(x) = ' + F('y', 'x')) + ' &nbsp; ' + m('MC(y) = ' + F('x', 'y')), 'מה שמוותרים עליו, חלקי מה שמקבלים.'),
       c('x', 'בניית העקומה', m('Ymax = Σy') + ' &nbsp; ' + m('Xmax = Σx'), 'מדרגים לפי ' + m('MC(x)') + ' מהנמוכה. מתחילים ב-' + m('(0, Ymax)') + ', כל עובד מוסיף את ה-x שלו ומוריד את ה-y שלו.'),
-      c('ac', 'שולית מול ממוצעת', m('MC < AC') + ' &nbsp; ' + m('MC > AC'), 'הממוצעת יורדת, הממוצעת עולה. בעקומה קעורה השולית עולה ולכן גם הממוצעת.'));
+      c('ac', 'שולית מול ממוצעת', m('MC < AC') + ' &nbsp; ' + m('MC > AC'), 'הממוצעת יורדת, הממוצעת עולה. בעקומה קעורה השולית עולה ולכן גם הממוצעת.')].map((e, k) => rv(e, k + 1)));
+    root.appendChild(h('p.lead', 'ששת הכלים של היום, אחד בכל לחיצה.'));
     root.appendChild(g);
-    root.appendChild(h('div.card.y', { style: 'margin-top:12px' }, h('div', { html: '<b>נקודת שבר:</b> x לפי הקטע משמאל, y לפי ההופכי של הקטע מימין. &nbsp; <b>בין נקודות:</b> מוצאים את הקטע, את השיפוע, ואת y. &nbsp; <b>יתרון יחסי:</b> עלות שולית נמוכה ביותר. <b>יתרון מוחלט:</b> הכמות הגדולה ביותר.' })));
+    root.appendChild(rv(h('div.card.y', { style: 'margin-top:12px' }, h('div', { html: '<b>נקודת שבר:</b> x לפי הקטע משמאל, y לפי ההופכי של הקטע מימין. &nbsp; <b>בין נקודות:</b> מוצאים את הקטע, את השיפוע, ואת y. &nbsp; <b>יתרון יחסי:</b> עלות שולית נמוכה ביותר. <b>יתרון מוחלט:</b> הכמות הגדולה ביותר.' })), 7));
+    root.appendChild(rv(h('div', { style: 'margin-top:12px;display:flex;justify-content:center' }, memeCard('trophy', 'שולית, ממוצעת, יתרון יחסי', 'עכשיו העקומה לא נופלת מהשמיים')), 8));
   }
 });
 
