@@ -1182,6 +1182,9 @@ const nm = v => fmt(v);
   @media screen{
     .slide .sbody{zoom:var(--fitz,1)}
   }
+  /* table headers sit above their columns: same alignment as the cells */
+  table.t th,table.l2-tb th,.wbt th{text-align:center}
+  table.t td,table.l2-tb td{text-align:center}
   .cv{-webkit-print-color-adjust:exact;print-color-adjust:exact;padding:0!important;overflow:hidden;background:radial-gradient(1200px 600px at 75% 0%,#22407a 0%,#0f1d3a 45%,#0a1428 100%)}
   .cv .sbody{zoom:1;height:100%}
   .pslide.cv .pz{width:100%!important;height:100%;transform:none!important}
@@ -1205,10 +1208,11 @@ const nm = v => fmt(v);
   .cvw .ft b{color:#fff}
   .cvw .tw{position:absolute;left:clamp(24px,6vw,110px);bottom:clamp(60px,12vh,140px);width:clamp(180px,22vw,330px);background:#fff;color:#16213a;border-radius:20px;padding:12px 14px 14px;box-shadow:0 26px 60px rgba(0,0,0,.45);transform:rotate(-4deg);text-align:center}
   .cvw .tw svg{width:46%;height:auto}
-  .mmc{display:inline-flex;flex-direction:column;align-items:center;background:#fff;border:3px solid var(--ink);border-radius:16px;padding:8px 12px 10px;max-width:300px;box-shadow:0 10px 26px rgba(0,0,0,.12)}
+  .mmc{display:inline-flex;flex-direction:column;align-items:center;background:#fff;border:3px solid var(--ink);border-radius:16px;padding:8px 12px 10px;width:310px;max-width:100%;box-sizing:border-box;box-shadow:0 10px 26px rgba(0,0,0,.12)}
   .mmc svg{width:120px;height:120px}
   .mmt,.mmb,.meme .mt,.meme .mb{font-family:Heebo,sans-serif;font-weight:900;line-height:1.1;text-align:center;color:#fff;-webkit-text-stroke:1.2px #000;paint-order:stroke fill;text-shadow:2px 2px 0 #000,-1px -1px 0 #000,1px -1px 0 #000,-1px 1px 0 #000}
-  .mmt{font-size:21px}.mmb{font-size:18px}
+  .mmt{font-size:20px}.mmb{font-size:17px}
+  .mmc .mmt,.mmc .mmb{width:100%;white-space:normal}
   .meme{position:fixed;inset:0;z-index:90;display:flex;align-items:center;justify-content:center;pointer-events:none;opacity:0;transition:opacity .25s}
   .meme.on{opacity:1;pointer-events:auto;background:rgba(8,16,31,.35)}
   .meme .mm{background:#fff;border-radius:22px;padding:14px 22px 16px;box-shadow:0 30px 80px rgba(0,0,0,.45);display:flex;flex-direction:column;align-items:center;width:440px;max-width:86vw;transform:scale(.3) rotate(-8deg)}
@@ -1957,9 +1961,9 @@ slide({
     const g = h('div.hwg');
     const c = (cls, t, body) => h('div.card.' + cls, h('h3', t), h('div', { html: body }));
     [c('y', '1. נקודות הקצה', 'כולם בונים שולחנות: ' + m('Ymax = 2 + 8 + 6 = 16') + '.<br>כולם בונים כיסאות: ' + m('Xmax = 6 + 8 + 2 = 16') + '.'),
-     c('mc', '2. עלות שולית של כל עובד', 'כמה y עולה יחידת x אחת אצל העובד. <t k="mcw">עלות שולית</t> ' + m('MC') + ' (Marginal Cost): ' + m('MC(x) = ' + F('y', 'x')) + '. אצל דן: ' + m(F('2', '6') + ' ≈ 0.33') + '.'),
+     c('mc', '2. עלות שולית של כל עובד', 'כמה y עולה יחידת x אחת אצל העובד. זו ה<t k="mcw">עלות השולית</t> שלו, ' + m('MC') + ' (Marginal Cost).<div style="margin-top:4px">' + m('MC(x) = ' + F('y', 'x')) + '</div><div>אצל דן: ' + m(F('2', '6') + ' ≈ 0.33') + '</div>'),
      c('ok', '3. דירוג', 'מהעלות השולית הנמוכה לגבוהה: דן (0.33), יעל (1), עומר (3).'),
-     c('x', '4. נקודות ושרטוט', 'מתחילים ב-' + m('(0, Ymax)') + '. כל עובד, לפי הסדר, מוסיף את ה-x שלו ומוריד את ה-y שלו: ' + m('(0, 16) → (6, 14) → (14, 6) → (16, 0)') + '.')].forEach((e, k) => g.appendChild(rv(e, k + 1)));
+     c('x', '4. נקודות ושרטוט', 'מתחילים ב-' + m('(0, Ymax)') + '. כל עובד, לפי הסדר, מוסיף את ה-x שלו ומוריד את ה-y שלו.<div style="margin-top:4px;font-size:.92em">' + m('(0, 16) → (6, 14) → (14, 6) → (16, 0)') + '</div>')].forEach((e, k) => g.appendChild(rv(e, k + 1)));
     root.appendChild(g);
     root.appendChild(rv(h('div.card.y', { style: 'margin-top:12px' }, h('div', { html: '<b>ועכשיו:</b> שאלה בסגנון מבחן. מקבלים רק את נתוני העובדות, ובונים את טבלת הפתרון מאפס.' }), h('div', { style: 'margin-top:6px' }, h('span.chip', { role: 'button', style: 'cursor:pointer', onclick: () => { Deck.go('hx'); } }, 'לשאלה'))), 5));
   }
@@ -2361,7 +2365,7 @@ stageSlide({
     if (k <= 0) return '<b class="t">לפני שמתחילים</b>ארבע נקודות נתונות. נסמן אותן, נחבר, ואז נענה סעיף אחר סעיף.';
     if (k === 1) return '<b class="t">מסמנים את הנקודות</b>ארבע נקודות השבר של העקומה.';
     if (k === 2) return '<b class="t">מחברים בקווים ישרים</b>שלושה קטעים: AB, BC, CD.';
-    if (k >= 15) return '<b class="t">הכלל</b>x מסתכל שמאלה, y מסתכל ימינה והופך את השיפוע. לחצו על תא בטבלה כדי לחזור להסבר שלו.';
+    if (k >= 15) return '<b class="t">ארבעת הסעיפים פתורים</b>לחצו על תא בטבלה כדי לחזור להסבר שלו ולסימון שלו בגרף.';
     const i = Math.floor((k - 3) / 3), sub = (k - 3) % 3, r = F1[i], isY = i >= 2, P = F1P[r[2]], seg = F1L[r[3][0]] + F1L[r[3][1]];
     if (sub === 0) return '<b class="t">סעיף ' + r[0] + ': איפה הנקודה?</b>' + (isY ? 'היחידה ה-' + parseInt(r[1]) + ' של y: מחפשים את הנקודה שבה ' + m('y = ' + parseInt(r[1])) : 'היחידה ה-' + parseInt(r[1]) + ' של x: מחפשים את הנקודה שבה ' + m('x = ' + parseInt(r[1]))) + '. זו נקודה ' + m(F1L[r[2]] + ' (' + P[0] + ', ' + P[1] + ')') + '.';
     if (sub === 1) return '<b class="t">סעיף ' + r[0] + ': איזה קטע קובע?</b>' + (isY ? 'היחידה האחרונה של y נוספה כשעלינו לאורך העקומה, מימין לשמאל. לכן מסתכלים על הקטע שמימין לנקודה: ' : 'היחידה האחרונה של x נוספה כשהתקדמנו משמאל לימין. לכן מסתכלים על הקטע שמשמאל לנקודה: ') + seg + '.';
