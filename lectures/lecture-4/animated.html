@@ -2257,66 +2257,115 @@ costSlide({
   after: [L2.card('', 'תרגול הכלל: עלות שולית של y בנקודה B', 'מ-B, הקטע מימין הוא BC, ששיפועו 0.5. לכן ' + m('MC(y) = ' + F('1', '0.5') + ' = 2') + ' תמרים לתפוח. זו עובדת ד: ' + m(F('8', '4') + ' = 2') + '.')]
 });
 
-slide({
-  id: 'h5', kick: 'משק ״חלם״ · סעיף ו', kc: 'p', title: 'נקודה שלא מופיעה בגרף: 10 תמרים', mantra: ['k1'], tags: { ex: ['4.5'], q: ['4.14'] },
-  build(root, ctx) {
-    root.appendChild(h('p.lead', { html: 'המשק מייצר ביעילות 10 תמרים. אין נקודת שבר ב-' + m('x = 10') + '. נקרא לנקודה Q ונמצא אותה.' }));
-    const left = h('div.stack.l2-tight');
-    left.appendChild(rv(L2.card('', 'צעד 1: באיזה קטע?', m('x = 10') + ' בין 8 ל-16, כלומר בקטע BC, בין ' + m('B(8, 18)') + ' ל-' + m('C(16, 14)') + '.'), 1));
-    left.appendChild(rv(L2.card('', 'צעד 2: שיפוע', m('a = ' + F('14 − 18', '16 − 8') + ' = −0.5')), 2));
-    left.appendChild(rv(L2.card('', 'צעד 3: משוואת הקו', 'מציבים את B ב-' + m('y = ax + b') + ': ' + m('18 = −0.5 × 8 + b') + ', ולכן ' + m('b = 22') + '. הקו: ' + m('y = 22 − 0.5x') + '.'), 3));
-    left.appendChild(rv(L2.card('ok', 'צעד 4: הנקודה', m('y = 22 − 0.5 × 10 = 17') + '. לכן ' + m('Q = (10, 17)') + '. בדיקת היגיון: 17 בין 18 ל-14.'), 4));
-    const T = Tryit({ head: 'צעד 5: העלויות', q: 'חשבו עלות כוללת, ממוצעת ושולית של תמרים בנקודה Q.',
-      hints: [m('TC(x) = 20 − 17') + '.', 'Q באמצע קטע BC, ולכן העלות השולית היא השיפוע שלו.'],
-      solution: () => h('div.stack', h('div', { html: m('TC(x) = 20 − 17 = 3') }), h('div', { html: m('AC(x) = ' + F('3', '10') + ' = 0.3') }), h('div', { html: m('MC(x) = 0.5') + ' (קטע BC, עובדת ד)' }), h('div.l2-note', 'השולית 0.5 מעל הממוצעת 0.3: הממוצעת עדיין עולה.')) });
-    T.labelled('tc', m('TC'), 3); T.labelled('ac', m('AC'), 0.3); T.labelled('mc', m('MC'), 0.5);
-    left.appendChild(rv(T.el, 5));
-    const host = h('div');
-    root.appendChild(h('div.cols', left, host));
-    const ch = w2Chart(host);
-    function draw(k) {
-      ch.clear('ann');
-      if (k >= 1) PPC.el('path', { class: 'seg-hl', d: `M${ch.sx(8)},${ch.sy(18)} L${ch.sx(16)},${ch.sy(14)}` }, ch.layer('ann'));
-      if (k >= 4) { ch.line(10, 0, 10, 17, 'guide x'); ch.line(0, 17, 10, 17, 'guide y'); ch.dot(10, 17, { cls: 'mc', r: 8, label: 'Q (10, 17)', pos: 'sw', layer: 'ann' }); }
+/* ===== a staged solution on one slide: the question stays, the solution table fills cell by cell,
+   every filled cell can be clicked to see its explanation and its marks on the chart ===== */
+function stageSlide(o) {
+  slide({
+    id: o.id, kick: o.kick, kc: 'p', title: o.title, mantra: o.mantra, tags: o.tags, steps: o.n,
+    build(root, ctx) {
+      const T = Tryit({ head: 'נסו לבד, ואז המשיכו בלחיצות לפתרון', hints: o.hints, solution: () => h('div.l2-note', 'הפתרון המלא נבנה בטבלה שמתחת, לחיצה אחר לחיצה.') });
+      o.fields.forEach(f => T.labelled(f[0], f[1], f[2], f[3] || {}));
+      const tbl = h('table.wbt'); tbl.appendChild(h('thead', h('tr', o.head.map(t => h('th', { html: t })))));
+      const tb = h('tbody'); tbl.appendChild(tb); const cells = [];
+      o.rows.forEach(r => { const tr = h('tr'); r.forEach(c => { const td = h('td'); tr.appendChild(td); cells.push([td, c]); }); tb.appendChild(tr); });
+      const exp = h('div.wbx');
+      const left = h('div.stack.l2-tight', qcard(o.src, o.q), T.el, tbl);
+      const host = h('div');
+      const right = h('div.stack.l2-tight', host, exp);
+      (o.after || []).forEach(a => right.appendChild(rv(a[0], a[1])));
+      root.appendChild(h('div.cols', left, right));
+      const ch = o.chart(host);
+      let K = 0, sel = null;
+      function paint() {
+        cells.forEach(([td, c]) => {
+          if (typeof c === 'string') { td.innerHTML = c; return; }
+          const on = K >= c.s; td.innerHTML = on ? c.v : ''; td.className = (on ? 'c' : '') + (on && c.s === K && sel === null ? ' new' : '') + (sel === c.s && on ? ' sel' : '');
+        });
+        const k = sel === null ? K : sel;
+        ['curve', 'pts', 'ann'].forEach(z => ch.clear(z)); o.mark(ch, k, K);
+        exp.innerHTML = o.say(k);
+      }
+      cells.forEach(([td, c]) => { if (typeof c !== 'string') td.addEventListener('click', () => { if (K < c.s) return; sel = sel === c.s ? null : c.s; paint(); }); });
+      const draw = k => { K = k; sel = null; paint(); };
+      draw(ctx.static ? o.n : 0); ctx.onStep(k => draw(k));
     }
-    draw(ctx.static ? 9 : 0); ctx.onStep(k => draw(k));
+  });
+}
+
+/* ----- part ו: a point that is not a break point ----- */
+stageSlide({
+  id: 'h5', kick: 'משק ״חלם״ · סעיף ו', title: 'נקודה שאינה נקודת שבר: 10 תמרים', mantra: ['k1'], tags: { ex: ['4.5'], q: ['4.14'] }, n: 8,
+  src: 'משק ״חלם״, סעיף ו', q: 'המשק מייצר ביעילות 10 תמרים. <b>כמה תפוחים הוא מייצר? מהי העלות הכוללת, הממוצעת והשולית של תמרים?</b>',
+  hints: ['אין נקודת שבר ב-' + m('x = 10') + '. בין אילו שתי נקודות שבר הוא נמצא?', 'בקטע BC השיפוע 0.5. מ-B התקדמנו 2 תמרים.', m('TC(x) = Ymax − Y') + '. בתוך קטע, העלות השולית היא שיפוע הקטע.'],
+  fields: [['y', m('y'), 17], ['tc', m('TC'), 3], ['ac', m('AC'), 0.3], ['mc', m('MC'), 0.5]],
+  head: ['שלב', 'חישוב', 'תוצאה'],
+  rows: [
+    ['<b>שלב 1</b><br>באיזה קטע', { v: m('8 < 10 < 16'), s: 1 }, { v: '<b>BC</b>', s: 1 }],
+    ['<b>שלב 2</b><br>שיפוע הקטע', { v: m(F('18 − 14', '16 − 8')), s: 2 }, { v: m('0.5'), s: 3 }],
+    ['<b>שלב 3</b><br>כמה y בנקודה', { v: m('18 − 0.5 × (10 − 8)'), s: 4 }, { v: m('17'), s: 5 }],
+    ['<b>שלב 4</b><br>עלות כוללת ' + m('TC(x)'), { v: m('20 − 17'), s: 6 }, { v: m('3'), s: 6 }],
+    ['<b>שלב 5</b><br>עלות ממוצעת ' + m('AC(x)'), { v: m(F('3', '10')), s: 7 }, { v: m('0.3'), s: 7 }],
+    ['<b>שלב 6</b><br>עלות שולית ' + m('MC(x)'), { v: 'שיפוע הקטע BC', s: 8 }, { v: m('0.5'), s: 8 }]],
+  after: [[L2.card('y', 'שימו לב', 'העלות השולית 0.5 גבוהה מהממוצעת 0.3, ולכן הממוצעת עולה. ואילו שאלו על תפוחים: ' + m('MC(y) = ' + F('1', '0.5') + ' = 2') + ', ההופכי של השיפוע.'), 8]],
+  chart: host => w2Chart(host),
+  say(k) {
+    return ['<b class="t">לפני שמתחילים</b>העקומה של משק ״חלם״, שבנינו קודם. ב-' + m('x = 10') + ' אין נקודת שבר. מה עושים?',
+      '<b class="t">שלב 1: באיזה קטע?</b>10 תמרים נמצאים בין 8 (נקודה B) ל-16 (נקודה C). לכן הנקודה על הקטע BC. נקרא לה Q.',
+      '<b class="t">שלב 2: שיפוע הקטע</b>' + m(F('|Y2 − Y1|', 'X2 − X1') + ' = ' + F('18 − 14', '16 − 8')) + '. במשולש שבגרף: יורדים 4, מתקדמים 8.',
+      '<b class="t">שלב 2: שיפוע הקטע</b>' + m(F('4', '8') + ' = 0.5') + ': כל תמר בקטע הזה מוריד חצי תפוח.',
+      '<b class="t">שלב 3: כמה תפוחים בנקודה Q?</b>מתחילים ב-B, שם ' + m('y = 18') + '. מ-B ל-Q התקדמנו ' + m('10 − 8 = 2') + ' תמרים, וכל תמר מוריד 0.5 תפוח.',
+      '<b class="t">שלב 3: הנקודה Q</b>' + m('y = 18 − 0.5 × 2 = 17') + '. לכן ' + m('Q = (10, 17)') + '. בדיקת היגיון: 17 בין 18 ל-14. אפשר גם דרך משוואת הקו: ' + m('y = 22 − 0.5x') + '.',
+      '<b class="t">שלב 4: עלות כוללת</b>כמה תפוחים ויתרנו: ' + m('TC(x) = Ymax − Y = 20 − 17 = 3') + '. זה החץ האנכי.',
+      '<b class="t">שלב 5: עלות ממוצעת</b>' + m('AC(x) = ' + F('TC(x)', 'X') + ' = ' + F('3', '10') + ' = 0.3') + ' תפוח לתמר.',
+      '<b class="t">שלב 6: עלות שולית</b>Q נמצאת בתוך הקטע BC, לא בנקודת שבר. לכן העלות השולית היא שיפוע הקטע: ' + m('MC(x) = 0.5') + '. זו העלות השולית של עובדת ד.'][k];
+  },
+  mark(ch, k) {
+    ch.curve(W2P); W2P.forEach((p, i) => ch.dot(p[0], p[1], { cls: 'gold', label: W2L[i], r: 6, pos: i === 2 ? 'sw' : 'ne' }));
+    if (k >= 1) { ch.line(10, 0, 10, 21, 'guide x'); segHL(ch, [8, 18], [16, 14]); }
+    if (k >= 2 && k <= 3) { ch.line(8, 18, 16, 18, 'guide'); ch.line(16, 18, 16, 14, 'guide'); ch.text(12, 18.6, '8', 'bl', 'middle'); ch.text(16.5, 16, '4', 'bl', 'start'); }
+    if (k === 4) { ch.line(8, 18, 10, 18, 'guide'); ch.text(9, 18.7, '2', 'bl', 'middle'); }
+    if (k >= 5) { ch.line(0, 17, 10, 17, 'guide y'); ch.dot(10, 17, { cls: 'mc', r: 8, label: 'Q (10, 17)', pos: 'sw', layer: 'ann' }); }
+    if (k === 6) { ch.line(0, 20, 10, 20, 'guide'); ch.vBracket(10, 20, 17, 'TC = 3', 'tc', 1); }
   }
 });
 
-/* ===== focused question: left and right of a vertex ===== */
-slide({
-  id: 'f1', kick: 'שאלה ממוקדת', kc: 'p', title: 'עלות שולית משמאל ומימין לנקודה', mantra: ['k5'], tags: { ex: ['4.6'], q: ['4.17'] },
-  build(root, ctx) {
-    const P = [[0, 100], [70, 80], [120, 50], [170, 0]], L = ['A', 'B', 'C', 'D'];
-    root.appendChild(h('p.lead', { html: 'עקומת תמורה: ' + m('A(0, 100)') + ', ' + m('B(70, 80)') + ', ' + m('C(120, 50)') + ', ' + m('D(170, 0)') + '. שיפועי הקטעים: ' + m('AB: ' + F('20', '70') + ' ≈ 0.286') + ', ' + m('BC: ' + F('30', '50') + ' = 0.6') + ', ' + m('CD: ' + F('50', '50') + ' = 1') + '.' }));
-    const T = Tryit({ head: 'ארבעה סעיפים', sub: 'x: השיפוע משמאל לנקודה. y: אחת חלקי השיפוע מימין לנקודה.',
-      hints: ['70X היא נקודה B. משמאל ל-B: קטע AB.', '100Y היא נקודה A. מימין ל-A: קטע AB. 50Y היא נקודה C. מימין ל-C: קטע CD.'],
-      solution: () => L2.tbl(['סעיף', 'נקודה', 'קטע', 'חישוב'], [
-        ['א. ' + m('70X'), 'B', 'AB, משמאל', m(F('100 − 80', '70 − 0') + ' ≈ 0.286')],
-        ['ב. ' + m('120X'), 'C', 'BC, משמאל', m(F('80 − 50', '120 − 70') + ' = 0.6')],
-        ['ג. ' + m('100Y'), 'A', 'AB, מימין', m(F('70', '20') + ' = 3.5')],
-        ['ד. ' + m('50Y'), 'C', 'CD, מימין', m(F('1', '1') + ' = 1')]]) });
-    T.labelled('a', 'א. ' + m('MC(70X)'), 2 / 7, { tol: 0.006 }); T.labelled('b', 'ב. ' + m('MC(120X)'), 0.6); T.labelled('c', 'ג. ' + m('MC(100Y)'), 3.5); T.labelled('d', 'ד. ' + m('MC(50Y)'), 1);
-    const left0 = [];
-    [1, 2, 3, 4].forEach(k => left0.push(rv(h('span', { style: 'display:none' }), k)));
-    const left = h('div.stack', T.el, ...left0, rv(L2.card('y', 'למה x משמאל ו-y מימין?', 'היחידה ה-70 של x היא האחרונה שנוספה בדרך מ-A ל-B, כלומר בקטע שמשמאל. היחידה ה-50 של y היא האחרונה שנוספה בדרך מ-D ל-C, כלומר בקטע שמימין.'), 5), rv(h('div', { style: 'display:flex;justify-content:center' }, memeCard('ghost', 'x מסתכל אחורה, y קדימה', 'כל אחד והקטע שלו')), 5));
-    const host = h('div');
-    root.appendChild(h('div.cols', left, host));
-    const ch = PPC.chart(host, { w: 520, h: 380, xmax: 185, ymax: 112, xLabel: 'X', yLabel: 'Y', ticksX: [70, 120, 170], ticksY: [50, 80, 100] });
-    const SEG = [null, [0, 1, 'א. 70X: הקטע משמאל ל-B, AB'], [1, 2, 'ב. 120X: הקטע משמאל ל-C, BC'], [0, 1, 'ג. 100Y: הקטע מימין ל-A, AB'], [2, 3, 'ד. 50Y: הקטע מימין ל-C, CD']];
-    const cap = h('div.fb.nt', 'לחיצה אחר לחיצה: לכל סעיף, הקטע שקובע את העלות השולית.');
-    host.appendChild(cap);
-    function draw(k) {
-      ['curve', 'pts', 'ann'].forEach(c => ch.clear(c));
-      ch.curve(P); P.forEach((p, i) => ch.dot(p[0], p[1], { cls: 'gold', label: L[i], r: 6, pos: i === 3 ? 'n' : 'ne' }));
-      const sg = SEG[Math.min(k, 4)];
-      if (sg) { PPC.el('path', { class: 'seg-hl', d: `M${ch.sx(P[sg[0]][0])},${ch.sy(P[sg[0]][1])} L${ch.sx(P[sg[1]][0])},${ch.sy(P[sg[1]][1])}` }, ch.layer('ann')); cap.innerHTML = '<b>' + sg[2] + '</b>'; }
-      else cap.textContent = 'לחיצה אחר לחיצה: לכל סעיף, הקטע שקובע את העלות השולית.';
-    }
-    draw(ctx.static ? 0 : 0);
-    ctx.onStep(k => draw(k));
+/* ----- focused question: marginal cost of x looks left, of y looks right ----- */
+const F1P = [[0, 100], [70, 80], [120, 50], [170, 0]], F1L = ['A', 'B', 'C', 'D'];
+const F1 = [   /* part, label, point index, segment [from,to], side, slope html, slope value, answer html */
+  ['א', '70X', 1, [0, 1], 'משמאל', F('100 − 80', '70 − 0'), '≈ 0.286', '≈ 0.286'],
+  ['ב', '120X', 2, [1, 2], 'משמאל', F('80 − 50', '120 − 70'), '= 0.6', '0.6'],
+  ['ג', '100Y', 0, [0, 1], 'מימין', F('100 − 80', '70 − 0'), '≈ 0.286', F('70', '20') + ' = 3.5'],
+  ['ד', '50Y', 2, [2, 3], 'מימין', F('50 − 0', '170 − 120'), '= 1', F('1', '1') + ' = 1']];
+stageSlide({
+  id: 'f1', kick: 'שאלה ממוקדת', title: 'עלות שולית משמאל ומימין לנקודה', mantra: ['k5'], tags: { ex: ['4.6'], q: ['4.17'] }, n: 15,
+  src: 'שאלה ממוקדת', q: 'עקומת תמורה עוברת דרך ' + m('A(0, 100)') + ', ' + m('B(70, 80)') + ', ' + m('C(120, 50)') + ' ו-' + m('D(170, 0)') + ', ומחוברת בקווים ישרים. <b>מהי העלות השולית בייצור: א. היחידה ה-70 של x. ב. היחידה ה-120 של x. ג. היחידה ה-100 של y. ד. היחידה ה-50 של y.</b>',
+  hints: ['עלות שולית של x: שיפוע הקטע שמשמאל לנקודה.', 'עלות שולית של y: אחת חלקי שיפוע הקטע שמימין לנקודה.', '100Y היא נקודה A. 50Y היא נקודה C.'],
+  fields: [['a', 'א. ' + m('MC(70X)'), 2 / 7, { tol: 0.006 }], ['b', 'ב. ' + m('MC(120X)'), 0.6], ['c', 'ג. ' + m('MC(100Y)'), 3.5], ['d', 'ד. ' + m('MC(50Y)'), 1]],
+  head: ['סעיף', 'הנקודה', 'הקטע שקובע', 'שיפוע הקטע', 'התשובה'],
+  rows: F1.map((r, i) => { const b = 3 + i * 3; return ['<b>' + r[0] + '.</b> ' + m(r[1]), { v: m(F1L[r[2]]), s: b }, { v: F1L[r[3][0]] + F1L[r[3][1]] + ', ' + r[4], s: b + 1 }, { v: m(r[5] + ' ' + r[6]), s: b + 2 }, { v: m(r[7]), s: b + 2 }]; }),
+  after: [[L2.card('y', 'הכלל', 'היחידה האחרונה של x נוספה בדרך משמאל, ולכן מסתכלים על הקטע שמשמאל. היחידה האחרונה של y נוספה בדרך מימין, ולכן מסתכלים על הקטע שמימין, והופכים את השיפוע.'), 15], [h('div', { style: 'display:flex;justify-content:center' }, memeCard('ghost', 'x מסתכל אחורה, y קדימה', 'כל אחד והקטע שלו')), 15]],
+  chart: host => PPC.chart(host, { w: 520, h: 340, xmax: 190, ymax: 114, xLabel: 'X', yLabel: 'Y', ticksX: [70, 120, 170], ticksY: [50, 80, 100] }),
+  say(k) {
+    if (k <= 0) return '<b class="t">לפני שמתחילים</b>ארבע נקודות נתונות. נסמן אותן, נחבר, ואז נענה סעיף אחר סעיף.';
+    if (k === 1) return '<b class="t">מסמנים את הנקודות</b>ארבע נקודות השבר של העקומה.';
+    if (k === 2) return '<b class="t">מחברים בקווים ישרים</b>שלושה קטעים: AB, BC, CD.';
+    if (k >= 15) return '<b class="t">הכלל</b>x מסתכל שמאלה, y מסתכל ימינה והופך את השיפוע. לחצו על תא בטבלה כדי לחזור להסבר שלו.';
+    const i = Math.floor((k - 3) / 3), sub = (k - 3) % 3, r = F1[i], isY = i >= 2, P = F1P[r[2]], seg = F1L[r[3][0]] + F1L[r[3][1]];
+    if (sub === 0) return '<b class="t">סעיף ' + r[0] + ': איפה הנקודה?</b>' + (isY ? 'היחידה ה-' + parseInt(r[1]) + ' של y: מחפשים את הנקודה שבה ' + m('y = ' + parseInt(r[1])) : 'היחידה ה-' + parseInt(r[1]) + ' של x: מחפשים את הנקודה שבה ' + m('x = ' + parseInt(r[1]))) + '. זו נקודה ' + m(F1L[r[2]] + ' (' + P[0] + ', ' + P[1] + ')') + '.';
+    if (sub === 1) return '<b class="t">סעיף ' + r[0] + ': איזה קטע קובע?</b>' + (isY ? 'היחידה האחרונה של y נוספה כשעלינו לאורך העקומה, מימין לשמאל. לכן מסתכלים על הקטע שמימין לנקודה: ' : 'היחידה האחרונה של x נוספה כשהתקדמנו משמאל לימין. לכן מסתכלים על הקטע שמשמאל לנקודה: ') + seg + '.';
+    return '<b class="t">סעיף ' + r[0] + ': השיפוע והתשובה</b>שיפוע ' + seg + ': ' + m(r[5] + ' ' + r[6]) + '. ' + (isY ? 'שאלו על y, ולכן הופכים את השיפוע: ' + m('MC(y) = ' + r[7]) + '.' : 'שאלו על x, ולכן זו התשובה: ' + m('MC(x) ' + r[6]) + '.');
+  },
+  mark(ch, k) {
+    if (k >= 2) ch.curve(F1P);
+    if (k >= 1) F1P.forEach((p, i) => ch.dot(p[0], p[1], { cls: 'gold', label: F1L[i], r: 6, pos: 'ne' }));
+    if (k < 3 || k >= 15) return;
+    const i = Math.floor((k - 3) / 3), sub = (k - 3) % 3, r = F1[i], P = F1P[r[2]], a = F1P[r[3][0]], b = F1P[r[3][1]];
+    PPC.el('circle', { cx: ch.sx(P[0]), cy: ch.sy(P[1]), r: 15, fill: 'none', stroke: 'var(--mc)', 'stroke-width': 3.5 }, ch.layer('ann'));
+    if (sub >= 1) segHL(ch, a, b);
+    if (sub >= 2) { ch.line(a[0], a[1], b[0], a[1], 'guide'); ch.line(b[0], a[1], b[0], b[1], 'guide'); ch.text((a[0] + b[0]) / 2 + 8, a[1] + 3.5, String(b[0] - a[0]), 'bl', 'middle'); ch.text(b[0] + 4, (a[1] + b[1]) / 2 + 2, String(a[1] - b[1]), 'bl', 'start'); }
   }
 });
+
 
 /* ===== summary ===== */
 slide({
