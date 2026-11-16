@@ -1784,7 +1784,7 @@ const api={mount,shift,Sheet,addr,parseAddr,colName,tokenize,parse,FIN};if(typeo
   .wbt td{padding:2px 6px;text-align:center;border-top:1px solid var(--line);height:28px;line-height:1.25}
   .wbt td.c{cursor:pointer;font-weight:700}
   .wbt td.c:hover{background:#eef4ff}
-  .wbt td.c.sel{outline:3px solid var(--mc);outline-offset:-3px;background:#fff0f7}
+  .wbt td.c.sel,.wbt td.sel{outline:3px solid var(--mc);outline-offset:-3px;background:#fff0f7;font-weight:800}
   .wbt td.new{animation:cellin .6s ease}
   .wbt td.src{background:#fff3cf}
   .wbt tr.tot td{background:#f3f0e8;font-weight:800}
@@ -1856,7 +1856,7 @@ slide({
       h('div.kl', 'מבוא למיקרו כלכלה · שיעור 4 · 17.11.2026'),
       h('h1', 'בונים עקומת תמורה', h('span.ac', 'מאפס, שלב אחר שלב')),
       h('div.st', 'פותחים בדוגמה חדשה, ממשיכים לשאלה בסגנון מבחן שבונים בה את טבלת הפתרון מאפס, ואז מחשבים עלויות על העקומה שבנינו.'),
-      h('div.chips', chips.map(c => h('span', c))),
+      h('div.chips', { style: 'max-width:66%' }, chips.map(c => h('span', c))),
       h('div.tw', h('div.mmt', 'מייצרת הכי הרבה?'), h('div', { html: '<svg viewBox="0 0 160 160" aria-hidden="true">' + ART.cat + '</svg>' }), h('div.mmb', 'יפה. נשלחת מי שמוותרת הכי מעט')),
       h('div.ft', { html: '<b>ד״ר שי צבאן</b> · המרכז האקדמי רופין · סמסטר א׳ תשפ״ז' })));
   }
@@ -2168,20 +2168,32 @@ slide({
   id: 'h2', kick: 'משק ״חלם״ · סעיפים ב, ג', kc: 'p', title: 'משק ״חלם״: למי יתרון יחסי?', mantra: ['k3'],
   tags: { ex: ['4.2'], q: ['4.10', '4.16'] },
   build(root, ctx) {
-    root.appendChild(h('p.lead', { html: '<t k="comp">יתרון יחסי</t> במוצר: העלות השולית הנמוכה ביותר בייצורו. לכן מחשבים גם ' + m('MC(y)') + '.' }));
-    const t = L2.tbl(W2head.concat([m('MC(y) = x / y'), m('MC(x) = y / x')]), W2.map(w => [h('b', w[0]), m(w[1]), m(w[2]), { v: m(fmt(w[2] / w[1])), sub: w[2] + ' / ' + w[1], s: 1 }, { v: m(fmt(w[1] / w[2])), sub: w[1] + ' / ' + w[2], s: 2 }]));
-    const right = h('div.stack');
+    const T = h('table.wbt'); const C = {};
+    T.appendChild(h('thead', h('tr', ['עובדת', 'תפוחים<br>' + m('y'), 'תמרים<br>' + m('x'), m('MC(x)') + '<br>' + m('y / x'), m('MC(y)') + '<br>' + m('x / y')].map(t => h('th', { html: t })))));
+    const tb = h('tbody'); T.appendChild(tb);
+    W2.forEach(w => { const tr = h('tr'); const c = [h('td', h('b', w[0])), h('td', { html: m(w[1]) }), h('td', { html: m(w[2]) }), h('td', { html: m(r2(w[1] / w[2])) }), h('td', { html: m(r2(w[2] / w[1])) })]; c.forEach(x => tr.appendChild(x)); tb.appendChild(tr); C[w[0]] = c; });
+    const left = h('div.stack.l2-tight', qcard('משק ״חלם״, סעיפים ב ו-ג', 'זו הטבלה שבנינו בסעיף א. <b>ב. לאיזו עובדת יש יתרון יחסי בייצור תפוחים? ג. לאיזו עובדת יש יתרון יחסי בייצור תמרים?</b>'), T);
+    left.appendChild(rv(fmBox('ac', 'ההגדרה', '<t k="comp">יתרון יחסי</t> (Comparative Advantage) במוצר: העלות השולית הנמוכה ביותר בייצור אותו מוצר.'), 6));
+    const right = h('div.stack.l2-tight');
+    right.appendChild(rv(L2.card('', 'נזכרים בנגרייה', 'דן עבר ראשון לכיסאות, כי הכיסא שלו היה הזול ביותר. אמרנו שלדן יש יתרון יחסי בכיסאות. עכשיו אותה שאלה במשק ״חלם״.'), 1));
     right.appendChild(rv(qc(ctx, 'סעיף ב: לאיזו עובדת יתרון יחסי בייצור תפוחים?', [
       { t: 'א', ok: true, why: m('MC(y) = ' + F('5', '10') + ' = 0.5') + ', הנמוכה ביותר. כל תפוח עולה לה חצי תמר.' },
       { t: 'ב', why: m('MC(y) = 4') + ' אצל ב, היקרה ביותר בתפוחים.' },
       { t: 'ג', why: m('MC(y) = 1') + ' אצל ג.' },
-      { t: 'ד', why: m('MC(y) = 2') + ' אצל ד.' }]), 1));
+      { t: 'ד', why: m('MC(y) = 2') + ' אצל ד.' }]), 2));
+    right.appendChild(rv(L2.card('ok', 'סעיף ב: מסתכלים על העמודה של y', 'שאלו על תפוחים, ולכן בודקים את ' + m('MC(y)') + '. הנמוכה ביותר היא 0.5, אצל עובדת א (מסומנת בטבלה).'), 3));
     right.appendChild(rv(qc(ctx, 'סעיף ג: לאיזו עובדת יתרון יחסי בייצור תמרים?', [
       { t: 'א', why: m('MC(x) = 2') + ' אצל א, היקרה ביותר בתמרים.' },
-      { t: 'ב', ok: true, why: m('MC(x) = ' + F('2', '8') + ' = 0.25') + ', הנמוכה ביותר. לכן היא נשלחה ראשונה לתמרים.' },
+      { t: 'ב', ok: true, why: m('MC(x) = ' + F('2', '8') + ' = 0.25') + ', הנמוכה ביותר. לכן היא עברה ראשונה לתמרים.' },
       { t: 'ג', why: m('MC(x) = 1') + ' אצל ג.' },
-      { t: 'ד', why: 'ד מייצרת 8 תמרים כמו ב, אבל ' + m('MC(x) = 0.5') + ' אצלה, יותר מאצל ב.' }]), 2));
-    root.appendChild(h('div.cols', t, right));
+      { t: 'ד', why: 'ד מייצרת 8 תמרים כמו ב, אבל ' + m('MC(x) = 0.5') + ' אצלה, יותר מאצל ב.' }]), 4));
+    right.appendChild(rv(L2.card('ok', 'סעיף ג: מסתכלים על העמודה של x', 'שאלו על תמרים, ולכן בודקים את ' + m('MC(x)') + '. הנמוכה ביותר היא 0.25, אצל עובדת ב. זו העובדת שעברה ראשונה לתמרים בסעיף א.'), 5));
+    left.appendChild(rv(L2.card('y', 'ומי עוברת ראשונה לתפוחים?', 'אם מתחילים כשכולן מייצרות תמרים, הסדר לתפוחים הוא לפי ' + m('MC(y)') + ': א (0.5), ג (1), ד (2), ב (4). זה בדיוק הסדר ההפוך מהסדר לתמרים.'), 7));
+    root.appendChild(h('div.cols', left, right));
+    function draw(k) {
+      W2.forEach(w => { C[w[0]][4].className = k >= 3 && w[0] === 'א' ? 'sel' : ''; C[w[0]][3].className = k >= 5 && w[0] === 'ב' ? 'sel' : ''; });
+    }
+    draw(ctx.static ? 9 : 0); ctx.onStep(k => draw(k));
   }
 });
 
