@@ -558,6 +558,10 @@ a.btn{display:inline-block;text-decoration:none;color:inherit}a.btn:hover{color:
 .bv{width:100%;border-radius:10px 10px 0 0;color:#fff;font-weight:800;font-size:20px;text-align:center;padding-top:4px;transition:height .18s;min-height:4px;direction:ltr}
 .bv.x{background:var(--x)} .bv.y{background:var(--y)}
 .bcol .bl{margin-top:6px;font-size:15px;font-weight:700;text-align:center}
+/* table headers sit above their columns: same alignment as the cells */
+table.t th{text-align:center}
+table.t.s06-pt th,table.t.s13-sol th{text-align:right}
+table.t.s13-sol th:first-child{text-align:center}
 </style></head>
 <body>
 <div id="app">
