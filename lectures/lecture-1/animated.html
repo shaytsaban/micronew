@@ -4723,10 +4723,10 @@ slide({
     };
     const sec2 = h('h3', { style: 'margin:12px 0 6px' }, 'שאלות אמריקאיות 1.9 עד 1.20');
     const g2 = h('div.hwg'); CLASS_Q.concat(HW_Q).sort((a, b) => parseFloat(a.slice(2)) - parseFloat(b.slice(2))).forEach(id => g2.appendChild(qcard(id, HW_Q.includes(id))));
-    const dl = h('div.card.ok', { style: 'margin-top:12px' }, h('b', 'חוברת תרגילי הבית'),
+    const dl = h('div.card.ok', { style: 'margin-top:12px' }, h('b', 'קובץ שיעורי הבית של שיעור 1'),
       h('div', { style: 'display:flex;gap:10px;flex-wrap:wrap;margin-top:6px' },
-        ctx.static ? h('span', 'חוברת תרגילי הבית עם הפתרונות: בקובץ materials/homework-booklet.pdf') : [
-          h('a.btn', { href: '../../materials/homework-booklet.pdf?v=20261103b', target: '_blank', rel: 'noopener' }, 'חוברת תרגילי הבית עם הפתרונות (PDF)')]));
+        ctx.static ? h('span', 'תרגילי שיעור 1 עם הפתרונות: בקובץ materials/homework-lesson-1.pdf') : [
+          h('a.btn', { href: '../../materials/homework-lesson-1.pdf?v=20261118', target: '_blank', rel: 'noopener' }, 'תרגילים 1.1 עד 1.20 עם הפתרונות (PDF)')]));
     root.append(sec1, g1, sec2, g2, dl);
   }
 });
