@@ -2564,7 +2564,7 @@ slide({
     left.appendChild(rv(L2.card('ac', 'שני מושגים', '<t k="factor">גורם ייצור</t> (Production Factor): משאב שדרוש לייצור, והכמות שלו מוגבלת. כאן: הקרקע. <t k="conline">קו מגבלה</t> (Constraint Line): כל הצירופים שמנצלים את הגורם עד הסוף. כאן: הקו שמחבר את ' + m('(0, 20)') + ' עם ' + m('(30, 0)') + '.'), 7));
     root.appendChild(h('p.lead', 'עד עכשיו בנינו את העקומה מנתוני עובדים. עכשיו: כדי לייצר צריך משאבים, והכמות שלהם מוגבלת. מתחילים בדוגמה.'));
     root.appendChild(h('div.cols', left, right));
-    const ch = PPC.chart(host, { w: 540, h: 340, xmax: 35, ymax: 24.5, xLabel: 'עגבניות (x)', yLabel: 'חיטה (y)', ticksX: [], ticksY: [], grid: false, showTicks: false });
+    const ch = PPC.chart(host, { w: 540, h: 355, xmax: 35, ymax: 24.5, xLabel: 'עגבניות (x)', yLabel: 'חיטה (y)', ticksX: [], ticksY: [], grid: false, showTicks: false });
     const says = ['<b class="t">לפני שמתחילים</b>שני צירים: עגבניות על ציר x, חיטה על ציר y. עדיין אין אף נקודה.',
       '<b class="t">השאלה</b>60 דונם, ושני גידולים שמתחרים עליהם. נחשו: כמה טונות עגבניות אפשר לגדל, אם מגדלים רק עגבניות?',
       '<b class="t">רק עגבניות</b>כל טון תופס 2 דונם: ' + m(F('60', '2') + ' = 30') + ' טון. זו הנקודה ' + m('(30, 0)') + ', על ציר x.',
@@ -2612,7 +2612,7 @@ slide({
       { t: 'כן, הצירוף אפשרי', why: 'בדקו כל גורם בנפרד. מים: ' + m('2 × 18 + 1 × 6 = 42') + ', יותר מ-40.' }]), 9));
     const exp = h('div.wbx'); const host = h('div');
     root.appendChild(h('div.cols', left, h('div.stack.l2-tight', host, exp, rv(L2.card('y', 'המסקנה', 'צירוף אפשרי רק אם הוא עומד <b>בשתי המגבלות יחד</b>: הוא נמצא מתחת לשני הקווים, או עליהם. מספיק שגורם ייצור אחד חסר, והצירוף בלתי אפשרי.'), 8))));
-    const ch = PPC.chart(host, { w: 540, h: 350, xmax: 35, ymax: 45, xLabel: 'עגבניות (x)', yLabel: 'חיטה (y)', ticksX: [], ticksY: [], grid: false, showTicks: false });
+    const ch = PPC.chart(host, { w: 540, h: 336, xmax: 35, ymax: 45, xLabel: 'עגבניות (x)', yLabel: 'חיטה (y)', ticksX: [], ticksY: [], grid: false, showTicks: false });
     const says = ['<b class="t">מאיפה ממשיכים</b>קו הקרקע מהשקף הקודם. עכשיו מוסיפים את המים, באותם צעדים.',
       '<b class="t">הנתון החדש</b>40 יחידות מים. טון עגבניות צורך 2 יחידות, וטון חיטה צורך יחידה אחת.',
       '<b class="t">מים: רק עגבניות</b>' + m(F('40', '2') + ' = 20') + ' טון. המים מספיקים רק ל-20 טון עגבניות, אף שהקרקע מספיקה ל-30.',
@@ -2657,7 +2657,7 @@ stageSlide({
     ['<b>y במפגש</b>', { v: m('y = 40 − 2 × 15'), s: 7 }, { v: m('y = 10'), s: 7 }],
     ['<b>בדיקה</b><br>בקו הקרקע', { v: m('20 − ' + F('2', '3') + ' × 15'), s: 8 }, { v: m('10 ✓'), s: 8 }]],
   after: [[L2.card('ok', 'עקומת התמורה עם שני גורמי ייצור', 'בכל x, המשק מוגבל על ידי הגורם שנגמר ראשון. לכן העקומה היא <b>הקו הנמוך מבין השניים</b>: קו הקרקע עד נקודת המפגש, וקו המים אחריה. הנקודות: ' + 'A ' + m('(0, 20)') + ', אחריה B ' + m('(15, 10)') + ', ובסוף C ' + m('(20, 0)') + '.'), 11]],
-  chart: host => PPC.chart(host, { w: 640, h: 380, xmax: 35, ymax: 45, xLabel: 'עגבניות (x)', yLabel: 'חיטה (y)', ticksX: [], ticksY: [], grid: false, showTicks: false }),
+  chart: host => PPC.chart(host, { w: 640, h: 372, xmax: 35, ymax: 45, xLabel: 'עגבניות (x)', yLabel: 'חיטה (y)', ticksX: [], ticksY: [], grid: false, showTicks: false }),
   say(k) {
     return ['<b class="t">לפני שמתחילים</b>שני קווי המגבלה מהשקף הקודם. הם נפגשים בנקודה אחת. נמצא אותה בחישוב.',
       '<b class="t">שלב 1: משוואה של קו מגבלה</b>הקו מתחיל ב-' + m('Ymax') + ' ויורד בקצב קבוע. הקצב הוא השיפוע: ' + m(F('Ymax', 'Xmax')) + '. לכן ' + m('y = Ymax − ' + F('Ymax', 'Xmax') + ' × x') + '.',
@@ -2723,13 +2723,13 @@ slide({
     const T = h('table.wbt');
     T.appendChild(h('thead', h('tr', ['גורם ייצור', 'כמות<br>במשק', 'לאייפון<br>' + m('x'), 'למקבוק<br>' + m('y'), m('Xmax'), m('Ymax'), 'שיפוע', 'משוואת הקו'].map(t => h('th', { html: t })))));
     const tb = h('tbody'); T.appendChild(tb);
-    E.F.forEach((f, i) => { const tr = h('tr'); ['n', 'q', 'ax', 'ay', 'X', 'Y', 's', 'e'].forEach(k => { const td = h('td'); C[k + i] = td; tr.appendChild(td); }); tb.appendChild(tr); });
+    E.F.forEach((f, i) => { const tr = h('tr'); ['n', 'q', 'ax', 'ay', 'X', 'Y', 's', 'e'].forEach(k => { const td = h('td', { 'data-k': '1' }); C[k + i] = td; tr.appendChild(td); }); tb.appendChild(tr); });
     const T2 = h('table.wbt'); T2.appendChild(h('thead', h('tr', ['שלב', 'חישוב', 'תוצאה'].map(t => h('th', { html: t })))));
     const tb2 = h('tbody'); T2.appendChild(tb2);
-    [['i1', 'משווים בין הקווים'], ['i2', 'מציבים את x']].forEach(r => { const tr = h('tr', h('td', h('b', r[1]))); ['a', 'b'].forEach(k => { const td = h('td'); C[r[0] + k] = td; tr.appendChild(td); }); tb2.appendChild(tr); });
+    [['i1', 'משווים בין הקווים'], ['i2', 'מציבים את x']].forEach(r => { const tr = h('tr', h('td', h('b', r[1]))); ['a', 'b'].forEach(k => { const td = h('td', { 'data-k': '1' }); C[r[0] + k] = td; tr.appendChild(td); }); tb2.appendChild(tr); });
     const T3 = h('table.wbt'); T3.appendChild(h('thead', h('tr', ['נקודה', 'איך מצאנו', 'אייפונים ' + m('x'), 'מקבוקים ' + m('y')].map(t => h('th', { html: t })))));
     const tb3 = h('tbody'); T3.appendChild(tb3);
-    [0, 1, 2].forEach(i => { const tr = h('tr'); ['l', 'w', 'x', 'y'].forEach(k => { const td = h('td'); C['p' + k + i] = td; tr.appendChild(td); }); tb3.appendChild(tr); });
+    [0, 1, 2].forEach(i => { const tr = h('tr'); ['l', 'w', 'x', 'y'].forEach(k => { const td = h('td', { 'data-k': '1' }); C['p' + k + i] = td; tr.appendChild(td); }); tb3.appendChild(tr); });
     const exp = h('div.wbx');
     const mid = h('div', T, h('div.wbh', 'נקודת המפגש של שני הקווים'), T2, h('div.wbh', 'נקודות העקומה'), T3);
     const host = h('div');
@@ -2737,7 +2737,7 @@ slide({
     let qUser = false; q.querySelector('summary').addEventListener('click', () => { qUser = true; });
     root.appendChild(strip);
     root.appendChild(h('div.m5v', h('div.stack.l2-tight', q, mid), h('div.stack.l2-tight', host, exp)));
-    const ch = PPC.chart(host, { w: 640, h: 344, xmax: 108, ymax: 112, xLabel: 'אייפונים (x)', yLabel: 'מקבוקים (y)', ticksX: [], ticksY: [], grid: false, showTicks: false });
+    const ch = PPC.chart(host, { w: 640, h: 334, xmax: 108, ymax: 112, xLabel: 'אייפונים (x)', yLabel: 'מקבוקים (y)', ticksX: [], ticksY: [], grid: false, showTicks: false });
     const D = {};
     const put = (key, from, html, ex, src) => { D[key] = { from, html, ex, src: src || [] }; };
     E.F.forEach((f, i) => {
@@ -2786,7 +2786,7 @@ slide({
     Object.keys(C).forEach(key => C[key].addEventListener('click', () => { const d = D[key]; if (!d || !d.ex || K < d.from) return; picked = key; paint(); exp.innerHTML = d.ex; }));
     function draw(k, anim) {
       K = k; picked = null; paint();
-      if (!ctx.static && !qUser) q.open = k <= 1;
+      if (!ctx.static && !qUser) q.open = k === 0;
       ST.forEach((s, i) => { sb[i].className = k >= s[1] && k <= s[2] ? 'on' : k > s[2] ? 'done' : ''; });
       conDraw(ch, E, { l1: k >= 17 ? 2 : k >= 16 ? 1 : 0, l2: k >= 19 ? 2 : k >= 18 ? 1 : 0, ix: k >= 20, p1: k >= 21, p2: k >= 22, dim: k >= 22, onSeg: segSay,
         anim: anim ? ({ 16: 'e1x', 17: 'l1', 18: 'e2x', 19: 'l2', 20: 'ix', 21: 'p1', 22: 'p2' })[k] || '' : '' });
@@ -2865,7 +2865,7 @@ slide({
     T.appendChild(h('tbody', E.F.map((f, i) => h('tr', h('td.f' + (i + 1) + 'c', f.name), h('td', { html: m(f.X) }), h('td', { html: m(f.Y) }), h('td', { html: m(f.s) }), h('td', { html: m('y = ' + f.Y + ' − ' + f.s + 'x') })))));
     const exp = h('div.wbx');
     const left = h('div.stack.l2-tight');
-    if (!ctx.static && !KR.solved) left.appendChild(h('div.card.y', h('div', { html: 'עוד לא סיימתם את הגיליון בשקף הקודם. כדאי לסיים אותו קודם. כאן מוצגים ערכי הפתרון.' }), h('div', { style: 'margin-top:6px' }, h('span.chip', { role: 'button', style: 'cursor:pointer', onclick: () => { Deck.go('g6'); } }, 'חזרה לגיליון'))));
+    if (!ctx.static && !KR.solved) left.appendChild(h('div.card.y', { style: 'padding:5px 11px;display:flex;gap:10px;align-items:center;font-size:14.5px' }, h('div', { html: 'הגיליון בשקף הקודם עוד לא הושלם, ולכן מוצגים כאן ערכי הפתרון.' }), h('span.chip', { role: 'button', style: 'cursor:pointer;white-space:nowrap', onclick: () => { Deck.go('g6'); } }, 'חזרה לגיליון')));
     left.append(h('div.l2-note', { html: 'אלה הערכים שבניתם בגיליון. כל לחיצה מוסיפה לשרטוט צעד אחד. אחרי שהעקומה משורטטת, אפשר ללחוץ על קטע ולראות מי מגביל בו.' }), T, exp);
     left.appendChild(rv(qc(ctx, 'הצירוף ' + m('(30, 20)') + ': 30 אופניים ו-20 קורקינטים. אפשרי?', [
       { t: 'לא, הפלדה לא מספיקה', ok: true, why: 'פלדה: ' + m('3 × 30 + 2 × 20 = 130') + ', יותר מ-120. שעות העבודה דווקא מספיקות: ' + m('1 × 30 + 2 × 20 = 70') + '.' },
@@ -2960,7 +2960,7 @@ slide({
       { t: 'אין אבטלה מבנית', why: 'רק בנקודת השבר ' + m('(20, 30)') + ' אין עודף. כאן ' + m('y = 36') + ', והנקודה בקטע AB.' }]), 18);
     const host = h('div');
     root.appendChild(h('div.k5g', h('div.stack.l2-tight', q, T, exp), h('div.stack.l2-tight', host, ptKey([[PT_C.gold, 'נקודה על העקומה']]), quiz)));
-    const ch = PPC.chart(host, { w: 560, h: 290, xmax: 50, ymax: 64, xLabel: 'אופניים (x)', yLabel: 'קורקינטים (y)', ticksX: [], ticksY: [], grid: false, showTicks: false });
+    const ch = PPC.chart(host, { w: 560, h: 316, xmax: 50, ymax: 64, xLabel: 'אופניים (x)', yLabel: 'קורקינטים (y)', ticksX: [], ticksY: [], grid: false, showTicks: false });
     const tip = ([n, x, y]) => { const us = kUse(KC.S, x, y), uh = kUse(KC.H, x, y);
       return [n + ' (' + x + ', ' + y + ')' + (n === 'B' ? ': נקודת השבר' : ''), 'פלדה: ' + m('3 × ' + x + ' + 2 × ' + y + ' = ' + us) + ' מתוך 120' + (120 - us ? '. <b>נשארים ' + (120 - us) + ' ק״ג.</b>' : '. הכול בשימוש.') + '<br>שעות: ' + m(x + ' + 2 × ' + y + ' = ' + uh) + ' מתוך 80' + (80 - uh ? '. <b>נשארות ' + (80 - uh) + ' שעות.</b>' : '. הכול בשימוש.')]; };
     const say = [
@@ -3367,7 +3367,7 @@ slide({
   .m5w .wbx b.t{display:block}
   .m5rule{background:#ecfdf5;border-right:4px solid #16a34a;border-radius:8px;padding:7px 10px;font-size:15.5px;line-height:1.45;margin-top:8px}
   .m5v{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.15fr);gap:14px;align-items:start}
-  .m5v .wbt{width:100%}.m5v .wbt td{height:31px;font-size:15.5px;padding:1px 5px}.m5v .wbt th{padding:4px 4px;font-size:13px}
+  .m5v .wbt{width:100%}.m5v .wbt td{height:30px;font-size:15.5px;padding:1px 5px}.m5v .wbt th{padding:4px 4px;font-size:13px}
   .m5v .wbh{margin:5px 0 2px;font-size:14.5px}
   .m5v .wbx{min-height:58px;font-size:15px;line-height:1.45;padding:6px 11px}.m5v .wbx b.t{display:block}
   .chbox5{background:#fff;border-radius:14px;box-shadow:0 2px 10px rgba(22,33,58,.08);padding:2px 4px;position:relative}
@@ -3429,7 +3429,7 @@ function m5Worked(o) {
       o.tables.forEach(t => {
         const T = h('table.wbt'); T.appendChild(h('thead', h('tr', t.head.map(x => h('th', { html: x })))));
         const tb = h('tbody'); T.appendChild(tb); const keys = [];
-        t.rows.forEach(r => { const tr = h('tr'); r.forEach(c => { const td = h('td'); if (D[c]) { C[c] = td; keys.push(c); } else td.innerHTML = c; tr.appendChild(td); }); tb.appendChild(tr); });
+        t.rows.forEach(r => { const tr = h('tr'); r.forEach(c => { const td = h('td'); if (D[c]) { C[c] = td; keys.push(c); td.dataset.k = '1'; } else td.innerHTML = c; tr.appendChild(td); }); tb.appendChild(tr); });
         let sec;
         if (o.fold && !ctx.static) { sec = h('details.tf5', { open: '' }, h('summary', { html: t.title || '' }), T); sec.querySelector('summary').addEventListener('click', () => { sec.user = true; }); }
         else sec = h('div', t.title ? h('div.wbh', { html: t.title }) : null, T);
@@ -3441,7 +3441,7 @@ function m5Worked(o) {
       const left = h('div.stack.l2-tight', host, exp);
       if (o.stages) root.appendChild(strip);
       root.appendChild(h('div.m5v' + (o.wcls ? '.' + o.wcls : ''), right, left));
-      const ch = PPC.chart(host, Object.assign({ ticksX: [], ticksY: [], grid: false, showTicks: false }, o.chart, { w: 640, h: o.chartH || 362 }));
+      const ch = PPC.chart(host, Object.assign({ ticksX: [], ticksY: [], grid: false, showTicks: false }, o.chart, { w: 640, h: o.chartH || 346 }));
       let K = 0, picked = null;
       function paint() {
         Object.keys(C).forEach(key => {
@@ -3453,7 +3453,7 @@ function m5Worked(o) {
       Object.keys(C).forEach(key => C[key].addEventListener('click', () => { const d = D[key]; if (!d.ex || K < d.s) return; picked = key; paint(); exp.innerHTML = d.ex; }));
       function draw(k, anim) {
         K = k; picked = null; paint();
-        if (!ctx.static && !qUser) qd.open = k <= 1;
+        if (!ctx.static && !qUser) qd.open = k === 0;
         if (o.fold && !ctx.static) {
           const act = secs.findIndex(x => x.keys.some(c => D[c].s === k));
           if (act >= 0) secs.forEach((x, i) => { if (!x.sec.user) x.sec.open = i === act; });
@@ -3565,7 +3565,7 @@ function m5Worked(o) {
     14: '<b class="t">העקומה: תמיד הקו הנמוך</b>A עד B על קו העובדים, B עד C על קו המים, C עד D על קו הקרקע. שתי נקודות שבר. לחצו על נקודה להסבר.'
   };
   m5Worked({
-    id: 'm2', kick: 'דוגמה רביעית: שלושה גורמי ייצור', title: 'חוות ״עמק״: שלושה קווים, עקומה אחת', n: 17, chartH: 352, src: 'שאלה בסגנון מבחן', tags: { ex: ['5.7'] },
+    id: 'm2', kick: 'דוגמה רביעית: שלושה גורמי ייצור', title: 'חוות ״עמק״: שלושה קווים, עקומה אחת', n: 17, chartH: 344, src: 'שאלה בסגנון מבחן', tags: { ex: ['5.7'] },
     q: 'חוות ״עמק״ מגדלת עגבניות (' + m('x') + ', בטונות) ומלפפונים (' + m('y') + ', בטונות). לרשותה 60 שעות עבודה, 120 מ״ק מים ו-70 דונם קרקע.'
       + '<br>טון עגבניות דורש שעת עבודה אחת, 3 מ״ק מים ו-2 דונם.<br>טון מלפפונים דורש 2 שעות עבודה, 3 מ״ק מים ודונם אחד.'
       + '<div style="margin-top:6px"><b>נדרש:</b></div><ol style="margin:2px 18px 0 0;padding:0"><li>בנו ושרטטו את עקומת התמורה.</li><li>מי מגביל בכל קטע, ומהי העלות השולית של עגבניות בכל קטע?</li></ol>',
@@ -3574,7 +3574,7 @@ function m5Worked(o) {
       { head: ['גורם', 'כמות', 'לטון ' + m('x'), 'לטון ' + m('y'), m('Xmax'), m('Ymax'), 'שיפוע'], rows: [0, 1, 2].map(i => ['n' + i, 'q' + i, 'ax' + i, 'ay' + i, 'X' + i, 'Y' + i, 's' + i]) },
       { title: 'נקודות העקומה', head: ['נקודה', 'איפה', 'מי מנוצל עד הסוף'], rows: [['<b>A</b>', 'pA', 'wA'], ['<b>B</b>', 'pB', 'wB'], ['<b>C</b>', 'pC', 'wC'], ['<b>D</b>', 'pD', 'wD']] },
       { title: 'עלות שולית של טון עגבניות', head: ['AB', 'BC', 'CD'], rows: [['mAB', 'mBC', 'mCD']] }],
-    D, chart: { xmax: 46, ymax: 47, xLabel: 'עגבניות (x)', yLabel: 'מלפפונים (y)' },
+    D, chart: { xmax: 51, ymax: 47, xLabel: 'עגבניות (x)', yLabel: 'מלפפונים (y)' },
     say: k => SAY[k],
     draw(ch, k, anim, host) {
       m5Lines(ch, L, { ends: k >= 4 ? 3 : k >= 3 ? 2 : k >= 2 ? 1 : 0, lines: k >= 13 ? 3 : k >= 12 ? 1 : 0, curve: k >= 14 ? P : [], dim: k >= 14, anim: anim ? ({ 12: 'l0', 13: 'l1', 14: 'p0' })[k] : '' });
@@ -3620,7 +3620,7 @@ slide({
     const mid = h('div.stack.l2-tight', rv(qa, 5), rv(qb, 5), rule3);
     root.appendChild(h('div', { style: 'display:grid;grid-template-columns:minmax(0,.9fr) minmax(0,1.45fr) minmax(0,.72fr);gap:12px;align-items:start' }, left, right, mid));
     host.className = 'chbox5';
-    const ch = PPC.chart(host, { w: 560, h: 330, xmax: 64, ymax: 28, xLabel: 'תמרים (x)', yLabel: 'ענבים (y)', ticksX: [], ticksY: [], grid: false, showTicks: false });
+    const ch = PPC.chart(host, { w: 560, h: 330, xmax: 71, ymax: 28, xLabel: 'תמרים (x)', yLabel: 'ענבים (y)', ticksX: [], ticksY: [], grid: false, showTicks: false });
     const SAY = ['<b class="t">מתחילים</b>שני גורמי ייצור. נחשב את הקצוות של כל קו.', '<b class="t">קו הקרקע</b>' + m('Xmax = 40') + ', ' + m('Ymax = 20') + '. השיפוע ' + m('20 / 40 = 0.5') + '.',
       '<b class="t">קו המים</b>' + m('Xmax = 50') + ', ' + m('Ymax = 25') + '. השיפוע ' + m('25 / 50 = 0.5') + '. אותו שיפוע: הקווים מקבילים.',
       '<b class="t">הקווים לא נפגשים</b>קו המים כולו מעל קו הקרקע. אין נקודת מפגש ואין נקודת שבר.',
@@ -3722,14 +3722,14 @@ slide({
     const T = h('table.wbt');
     T.appendChild(h('thead', h('tr', ['גורם', 'כמות', 'לעגבניות<br>' + m('x'), 'למלפפונים<br>' + m('y'), m('Xmax'), m('Ymax'), 'שיפוע'].map(t => h('th', { html: t })))));
     const tb = h('tbody'); T.appendChild(tb);
-    E.F.forEach((f, i) => { const tr = h('tr'); ['n', 'q', 'ax', 'ay', 'X', 'Y', 's'].forEach(k => { const td = h('td'); C[k + i] = td; tr.appendChild(td); }); tb.appendChild(tr); });
+    E.F.forEach((f, i) => { const tr = h('tr'); ['n', 'q', 'ax', 'ay', 'X', 'Y', 's'].forEach(k => { const td = h('td', { 'data-k': '1' }); C[k + i] = td; tr.appendChild(td); }); tb.appendChild(tr); });
     const T2 = h('table.wbt'); T2.appendChild(h('thead', h('tr', ['נקודה', 'איך', m('x'), m('y')].map(t => h('th', { html: t })))));
     const tb2 = h('tbody'); T2.appendChild(tb2);
-    [0, 1, 2].forEach(i => { const tr = h('tr'); ['l', 'w', 'x', 'y'].forEach(k => { const td = h('td'); C['p' + k + i] = td; tr.appendChild(td); }); tb2.appendChild(tr); });
+    [0, 1, 2].forEach(i => { const tr = h('tr'); ['l', 'w', 'x', 'y'].forEach(k => { const td = h('td', { 'data-k': '1' }); C['p' + k + i] = td; tr.appendChild(td); }); tb2.appendChild(tr); });
     const T3 = h('table.wbt'); T3.appendChild(h('thead', h('tr', ['סעיף', 'חישוב', 'תשובה'].map(t => h('th', { html: t })))));
     const tb3 = h('tbody'); T3.appendChild(tb3);
     const R3 = [['m1', 'ב, טון 10'], ['m2', 'ב, טון 25'], ['m3', 'ב, טון 20'], ['u1', 'ג, קרקע בשימוש'], ['u2', 'ג, קרקע עודפת'], ['k1', 'ד, ' + m('(15, 20)')], ['k2', 'ד, ' + m('(25, 15)')]];
-    R3.forEach(r => { const tr = h('tr', h('td', { html: '<b>' + r[1] + '</b>' })); ['a', 'b'].forEach(k => { const td = h('td'); C[r[0] + k] = td; tr.appendChild(td); }); tb3.appendChild(tr); });
+    R3.forEach(r => { const tr = h('tr', h('td', { html: '<b>' + r[1] + '</b>' })); ['a', 'b'].forEach(k => { const td = h('td', { 'data-k': '1' }); C[r[0] + k] = td; tr.appendChild(td); }); tb3.appendChild(tr); });
     const exp = h('div.wbx');
     const FS = [['שלבים 1 עד 3: טבלת הנתונים', T, 1, 4], ['שלבים 4 עד 6: נקודות העקומה', T2, 5, 10], ['סעיפים ב עד ד', T3, 11, 17]];
     const FD = FS.map(f => { if (ctx.static) return h('div', h('div.wbh', f[0]), f[1]); const d = h('details.tf5', { open: '' }, h('summary', f[0]), f[1]); d.querySelector('summary').addEventListener('click', () => { d.user = true; }); return d; });
@@ -3740,7 +3740,7 @@ slide({
     let qUser = false; q.querySelector('summary').addEventListener('click', () => { qUser = true; });
     host.className = 'chbox5';
     root.appendChild(h('div.m5v.e1c', h('div.stack.l2-tight', q, mid), h('div.stack.l2-tight', host, right.lastChild, exp)));
-    const ch = PPC.chart(host, { w: 640, h: 340, xmax: 44, ymax: 44, xLabel: 'עגבניות (x)', yLabel: 'מלפפונים (y)', ticksX: [], ticksY: [], grid: false, showTicks: false });
+    const ch = PPC.chart(host, { w: 640, h: 320, xmax: 44, ymax: 44, xLabel: 'עגבניות (x)', yLabel: 'מלפפונים (y)', ticksX: [], ticksY: [], grid: false, showTicks: false });
     const put = (key, from, html, ex) => { D[key] = { from, html, ex }; };
     E.F.forEach((f, i) => {
       const of = 'ה' + f.name;
@@ -3793,7 +3793,7 @@ slide({
       [25, 15, 'bad5', 'R (25, 15)', 'מעל קו הקרקע: הצירוף דורש 130 דונם, ויש רק 120. בלתי אפשרי.', 17, 'e']];
     function draw(k, anim) {
       K = k; picked = null; paint();
-      if (!ctx.static && !qUser) q.open = k <= 1;
+      if (!ctx.static && !qUser) q.open = k === 0;
       if (!ctx.static) FS.forEach((f, i) => { if (!FD[i].user) FD[i].open = k === 0 ? i === 0 : (k >= f[2] && k <= f[3]); });
       host.querySelectorAll('.pttip').forEach(e => e.remove());
       ST.forEach((s, i) => { sb[i].className = k >= s[1] && k <= s[2] ? 'on' : k > s[2] ? 'done' : ''; });
@@ -4192,7 +4192,7 @@ procSlide({
   side: ctx => { const host = h('div'); const box = h('div.stack.l2-tight', host, h('div.ptkey', [['#7c3aed', 'עובדים'], ['#d97706', 'מים'], ['#0891b2', 'קרקע'], ['#16a34a', 'העקומה'], [PT_C.bad5, 'מפגש שנמחק']].map(([c, t]) => h('span', h('i', { style: 'background:' + c }), t))), h('div.clickhint', '👆 לחצו על נקודה בגרף לקבלת הסבר')); box.__host = host; return box; },
   onK: function (k, anim, box) {
     const host = box.__host;
-    if (!host.__ch) host.__ch = PPC.chart(host, { w: 520, h: 440, xmax: 46, ymax: 47, xLabel: 'עגבניות (x)', yLabel: 'מלפפונים (y)', ticksX: [], ticksY: [], grid: false, showTicks: false });
+    if (!host.__ch) host.__ch = PPC.chart(host, { w: 520, h: 440, xmax: 51, ymax: 47, xLabel: 'עגבניות (x)', yLabel: 'מלפפונים (y)', ticksX: [], ticksY: [], grid: false, showTicks: false });
     const ch = host.__ch; host.querySelectorAll('.pttip').forEach(e => e.remove());
     const L = [{ X: 60, Y: 30, cls: 1, lab: [37, 14], name: 'עובדים' }, { X: 40, Y: 40, cls: 2, lab: [2, 43], name: 'מים' }, { X: 35, Y: 70, cls: 3, lab: [14.5, 44], name: 'קרקע' }];
     m5Lines(ch, L, { ends: k >= 1 ? 3 : 0, lines: k >= 1 ? 3 : 0, curve: k >= 7 ? [[0, 30], [20, 20], [30, 10], [35, 0]] : [], dim: k >= 7, anim: anim ? ({ 1: 'l0', 7: 'p0' })[k] : '' });
@@ -4394,7 +4394,7 @@ const RMP = [[0, 50], [40, 30], [50, 0]];
       + '<div style="margin-top:6px"><b>נדרש:</b></div><ol><li value="2">מהי העלות השולית של הסנדל ה-20? ה-45? ה-40? ושל התיק ה-30?</li><li>המפעל מייצר ביעילות 20 סנדלים. כמה עור לא מנוצל?</li><li>סווגו את הצירופים ' + m('(44, 20)') + ', ' + m('(30, 30)') + ' ו-' + m('(10, 45)') + '.</li></ol>',
     stages: [['', 1, 4, prLab(7)], ['', 5, 6, prLab(9)], ['', 7, 9, prLab(8)]],
     tables: [{ title: 'הסעיפים, ומספר השלב של כל אחד', head: ['סעיף', 'שלב', 'חישוב', 'תשובה'], rows: R.map(r => ['<b>' + (r[0][0] === 'b' ? 'ב, ' : r[0][0] === 'd' ? 'ד, ' : '') + r[2] + '</b>', '<b>' + r[3] + '</b>', r[0] + 'a', r[0] + 'b']) }],
-    D, chart: { xmax: 56, ymax: 58, xLabel: 'סנדלים (x)', yLabel: 'תיקים (y)' },
+    D, chart: { xmax: 61, ymax: 58, xLabel: 'סנדלים (x)', yLabel: 'תיקים (y)' },
     say: k => SAY[k],
     draw(ch, k, anim, host) {
       m5Lines(ch, [{ X: 50, Y: 150, cls: 1, lab: [9, 52], name: 'עור' }, { X: 100, Y: 50, cls: 2, lab: [20, 43], name: 'שעות' }], { ends: 0, lines: 2, curve: RMP, dim: true, nolab: true });
@@ -4434,14 +4434,14 @@ const RMP = [[0, 50], [40, 30], [50, 0]];
   const SAY = { 0: prT('מתחילים', 'שימו לב לשלב 4: הוא מחליט אם יש נקודת שבר. בסעיף ד אותה שאלה, עם יותר קרקע, והתשובה משתנה.') };
   const L = [{ X: 60, Y: 30, cls: 1, lab: [33, 19], name: 'קרקע (60)' }, { X: 80, Y: 60, cls: 2, lab: [13, 54], name: 'מים' }, { X: 100, Y: 50, cls: 3, lab: [60, 25], name: 'קרקע (100)' }];
   m5Worked({
-    id: 'pr2', kick: 'תרגול 2: ההחלטה בשלב 4', title: 'חוות ״יערה״: יש נקודת שבר, או אין?', n: 12, src: 'שאלה לתרגול', wcls: 'prc', fold: true,
+    id: 'pr2', kick: 'תרגול 2: ההחלטה בשלב 4', title: 'חוות ״יערה״: יש נקודת שבר, או אין?', n: 12, chartH: 362, src: 'שאלה לתרגול', wcls: 'prc', fold: true,
     q: 'חוות ״יערה״ מגדלת תפוחים (' + m('x') + ') ואגסים (' + m('y') + '), בטונות. לרשותה 60 דונם ו-240 מ״ק מים. טון תפוחים דורש דונם אחד ו-3 מ״ק מים. טון אגסים דורש 2 דונם ו-4 מ״ק מים.'
       + '<ol style="margin-top:4px"><li>בנו את העקומה. האם יש לה נקודת שבר?</li><li>מהי העלות השולית, ומהי העלות הממוצעת, של טון תפוחים?</li><li>החווה מגדלת ביעילות 20 טון תפוחים. כמה מים לא מנוצלים?</li><li>החווה שוכרת עוד 40 דונם. בנו את העקומה החדשה. כמה עולה עכשיו טון התפוחים ה-50?</li></ol>',
     stages: [['', 1, 3, prLab(1, 3)], ['', 4, 4, 'שלב 4: אותו גורם בשני הצירים?'], ['', 5, 7, 'שלבים 6, 7, 9'], ['', 8, 12, 'ד: 100 דונם, הסדר מחדש']],
     tables: [
       { title: 'שלבים 1 עד 3', head: ['גורם', 'כמות', 'לתפוחים ' + m('x'), 'לאגסים ' + m('y'), m('Xmax'), m('Ymax'), 'שיפוע'], rows: [0, 1, 2].map(i => ['n' + i, 'q' + i, 'ax' + i, 'ay' + i, 'X' + i, 'Y' + i, 's' + i]) },
       { title: 'הסעיפים, ומספר השלב של כל אחד', head: ['סעיף', 'שלב', 'חישוב', 'תשובה'], rows: R.map(r => ['<b>' + r[2] + '</b>', '<b>' + r[3] + '</b>', r[0] + 'a', r[0] + 'b']) }],
-    D, chart: { xmax: 88, ymax: 64, xLabel: 'תפוחים (x)', yLabel: 'אגסים (y)' },
+    D, chart: { xmax: 97, ymax: 64, xLabel: 'תפוחים (x)', yLabel: 'אגסים (y)' },
     say: k => SAY[k],
     draw(ch, k, anim, host) {
       const old = k >= 5 && k < 11 ? [[0, 30], [60, 0]] : [];
@@ -4491,7 +4491,7 @@ const RMP = [[0, 50], [40, 30], [50, 0]];
       { title: 'שלבים 1 עד 3', head: ['גורם', 'כמות', 'לגבינה ' + m('x'), 'ליוגורט ' + m('y'), m('Xmax'), m('Ymax'), 'שיפוע'], rows: [0, 1, 2].map(i => ['n' + i, 'q' + i, 'ax' + i, 'ay' + i, 'X' + i, 'Y' + i, 's' + i]) },
       { title: 'שלבים 4 ו-5: נקודות, ובדיקה בגורם השלישי', head: ['מה', 'איך', m('(x, y)'), 'בדיקה', 'בעקומה?'], rows: P.map(p => ['<b>' + (p[0].startsWith('N') ? '' : p[0] === 'M' ? '' : p[0]) + '</b>', p[0] + 'h', p[0] + 'p', p[0] + 'c', p[0] + 'v']) },
       { left: true, title: 'סעיפים ב עד ד', head: ['סעיף', 'שלב', 'חישוב', 'תשובה'], rows: R.map(r => ['<b>' + r[2] + '</b>', '<b>' + r[3] + '</b>', r[0] + 'a', r[0] + 'b']) }],
-    D, chart: { xmax: 60, ymax: 64, xLabel: 'גבינה (x)', yLabel: 'יוגורט (y)' },
+    D, chart: { xmax: 67, ymax: 64, xLabel: 'גבינה (x)', yLabel: 'יוגורט (y)' },
     say: k => SAY[k],
     draw(ch, k, anim, host) {
       m5Lines(ch, L, { ends: k >= 4 ? 3 : k >= 3 ? 2 : k >= 2 ? 1 : 0, lines: k >= 4 ? 3 : k >= 3 ? 2 : k >= 2 ? 1 : 0, curve: k >= 12 ? [[0, 40], [20, 30], [40, 0]] : [], dim: k >= 12, anim: anim ? ({ 2: 'l0', 3: 'l1', 4: 'l2', 12: 'p0' })[k] : '' });
@@ -4533,7 +4533,7 @@ const RMP = [[0, 50], [40, 30], [50, 0]];
   R.forEach(r => { put(r[0] + 'a', r[1], r[4], r[6]); put(r[0] + 'b', r[1], r[5], r[6]); });
   const SAY = { 0: prT('מתחילים', 'התרגיל המסכם: שלושה גורמים, וכל השלבים. נסו לבנות את העקומה לבד לפני שאתם לוחצים.'), 11: prT('שלב 6: העקומה', 'A, B, C, D לפי הסדר. שלושה קטעים: עבודה, מחסן, פיברגלס. השיפועים עולים: 0.5, 1, 3.') };
   m5Worked({
-    id: 'pr4', kick: 'תרגול 4: התרגיל המסכם', title: 'מפעל ״אילת״: שלושה גורמים, ושלושתם מגבילים', n: 17, src: 'שאלה לתרגול', wcls: 'prc', fold: true,
+    id: 'pr4', kick: 'תרגול 4: התרגיל המסכם', title: 'מפעל ״אילת״: שלושה גורמים, ושלושתם מגבילים', n: 17, chartH: 362, src: 'שאלה לתרגול', wcls: 'prc', fold: true,
     q: 'מפעל ״אילת״ מייצר קיאקים (' + m('x') + ') וגלשנים (' + m('y') + '). לרשותו 100 שעות עבודה, 60 מקומות במחסן ו-120 ק״ג פיברגלס. קיאק דורש שעת עבודה אחת, מקום אחד במחסן ו-3 ק״ג פיברגלס. גלשן דורש 2 שעות עבודה, מקום אחד ו-ק״ג פיברגלס אחד.'
       + '<ol style="margin-top:4px"><li>בנו את העקומה.</li><li>כמה עולה הקיאק ה-10? ה-30? ה-35?</li><li>סווגו את ' + m('(25, 30)') + ', ' + m('(35, 20)') + ' ו-' + m('(10, 45)') + '. ביעיל: מה לא מנוצל?</li></ol>',
     stages: [['', 1, 5, prLab(1, 3)], ['', 6, 7, prLab(4)], ['', 8, 10, prLab(5)], ['', 11, 11, prLab(6)], ['', 12, 14, prLab(7)], ['', 15, 17, prLab(8, 9)]],
@@ -4595,10 +4595,12 @@ slide({
       root.appendChild(h('div', { style: 'margin-top:8px' }, table(['תרגיל', 'נושא', 'שקפים'], EX5L.map(e => [h('b', e.id), e.title, e.s.length ? 'שקף ' + e.s.filter(num).map(num).join(', ') + (e.note ? ' (' + e.note + ')' : '') : e.note]))));
       return;
     }
-    const g = h('div.hwg');
-    EX5L.forEach(e => g.appendChild(h('div.hwc', { 'data-key': e.id }, h('b', `תרגיל ${e.id}: ${e.title}`), e.s.length ? h('div.go', chips(e.s)) : null, e.note ? h('div.tp', e.note) : null)));
-    root.append(h('h3', { style: 'margin:12px 0 6px' }, 'תרגול עצמי: תרגילים 5.1 עד 5.21'), g,
-      h('div.card.ok', { style: 'margin-top:12px' }, h('b', 'קובץ שיעורי הבית של שיעור 5'), h('div', { style: 'margin-top:6px' }, h('a.btn', { href: BOOK5, target: '_blank', rel: 'noopener' }, 'תרגילים 5.1 עד 5.21 עם הפתרונות (PDF)'))));
+    const st5 = document.createElement('style'); st5.textContent = '.hw2c{display:grid;grid-template-columns:1fr 1fr;gap:12px;align-items:start}.hwt5{width:100%;border-collapse:separate;border-spacing:0 3px;font-size:14.5px}.hwt5 th{background:var(--ink);color:#fff;padding:4px 8px;text-align:right;font-size:13.5px}.hwt5 td{background:#fff;padding:3px 8px;border-top:1px solid var(--line);border-bottom:1px solid var(--line);vertical-align:middle;line-height:1.3}.hwt5 td.id{font-weight:800;white-space:nowrap}.hwt5 .go5{display:flex;flex-wrap:wrap;gap:3px}.hwt5 .go5 a.chip{padding:0 8px;font-size:13px;white-space:nowrap}.hwt5 tr.flash td{background:#fff8e1}.hwsub5{font-size:14.5px;padding:8px 14px!important}.hwsub5 h3{font-size:17px!important}'; root.appendChild(st5);
+    const sch = ids => h('div.go5', ids.map(sid => { const d = slides.find(z => z.id === sid); if (!d) return null; return h('a.chip', { href: '#' + sid, title: d.title, onclick: ev => { ev.preventDefault(); Deck.go(sid); } }, 'שקף ' + num(sid)); }));
+    const half = list => h('table.hwt5', h('thead', h('tr', h('th', 'תרגיל'), h('th', 'נושא'), h('th', 'שקפים (מעבר עם העכבר: שם השקף)'))), h('tbody', list.map(e => h('tr.hwc', { 'data-key': e.id }, h('td.id', e.id), h('td', e.title), h('td', e.s.length ? sch(e.s) : (e.note || ''))))));
+    const g = h('div.hw2c', half(EX5L.slice(0, 6)), half(EX5L.slice(6)));
+    const subCard = root.querySelector('.card.l2-subm'); if (subCard) subCard.classList.add('hwsub5');
+    root.append(h('h3', { style: 'margin:8px 0 4px;font-size:17px' }, 'תרגול עצמי: תרגילים 5.1 עד 5.21. לחצו על שקף כדי לעבור אליו'), g);
   }
 });
 
@@ -4609,6 +4611,101 @@ slide({
   for (let i = S.length - 1; i >= 0; i--) if (!KEEP.includes(S[i].id)) S.splice(i, 1);
   S.sort((a, b) => KEEP.indexOf(a.id) - KEEP.indexOf(b.id));
   Object.keys(GLOSS).forEach(k => { if (GLOSS[k].slide && !KEEP.includes(GLOSS[k].slide)) delete GLOSS[k].slide; });
+})();
+
+/* ===== lesson 5, final pass: nothing runs past the screen, cards that explain a step open on that step and then fold into one line,
+   and sparse slides get bigger text for the projector ===== */
+(function () {
+  const st = document.createElement('style');
+  st.textContent = `
+  details.n5{border:1.5px solid var(--line);border-radius:11px;background:#fff}
+  details.n5>summary{cursor:pointer;list-style:none;padding:5px 11px;font-weight:800;font-size:15px;color:var(--ink2);display:flex;gap:8px;align-items:center}
+  details.n5>summary::-webkit-details-marker{display:none}
+  details.n5>summary::after{content:'▾ ביאור, לחצו לפתיחה';font-size:12.5px;font-weight:600;color:var(--mut);margin-right:auto}
+  details.n5[open]>summary::after{content:'▴ לקיפול'}
+  details.n5>.card{margin:0;border:none;box-shadow:none}
+  details.n5[open]>summary{border-bottom:1px dashed var(--line)}
+  .g2t .l5t td,.g2t .wbt td{height:32px!important;padding:3px 7px!important}.g2t .l2-qc{padding:7px 12px}.g2t .l2-qc .qt{margin-bottom:4px}.g2t .card.l3-q{padding-top:6px;padding-bottom:6px}.g2t .wbx{min-height:0;padding:6px 11px}
+  .xl34 .xl-g td,.xl34 .xl-g th{height:34px!important}
+  .e2t .stail{display:none}.e2t .xl-g td,.e2t .xl-g th{height:27px!important;line-height:25px}
+  `;
+  document.head.appendChild(st);
+  const CFG = {
+    g1: { fold: ['שני מושגים'], dropLead: true, foldQ: true, cls: 'g2t' },
+    g2: { fold: ['המסקנה'], cls: 'g2t', foldQ: true, foldTo: 0 },
+    g3: { hideRows: true }, g5: { hideRows: true }, e1: { hideRows: true }, m2: { hideRows: true },
+    pr1a: { hideRows: true }, pr1b: { hideRows: true }, pr2: { hideRows: true }, pr3: { hideRows: true }, pr4: { hideRows: true },
+    sum5: { zoom: [['.s5g', 1.2]] },
+    g6: { cls: 'xl34' },
+    k4: { cls: 'xl34' },
+    e2: { cls: 'e2t' },
+    pr0: { zoom: [['.pr0g', 1.24], ['.stp5', 1.15]] },
+    k5: { zoom: [['.k5map', 1.3]] },
+    sp5: { zoom: [['table.p5t', 1.28]] }
+  };
+  /* the explanation of a quiz answer opens as a balloon beside the quiz (above it in the lower half of the screen),
+     so it never pushes the slide down; only the latest one stays open, and a click closes it */
+  const st2 = document.createElement('style');
+  st2.textContent = `
+  section.slide .l2-qc{position:relative}
+  section.slide .l2-qc>.fb.fbpop{position:absolute;left:6px;right:6px;z-index:45;margin:0;box-shadow:0 12px 30px rgba(0,0,0,.28);border-radius:12px;cursor:pointer;animation:l5pop .3s ease both}
+  section.slide .l2-qc>.fb.fbpop.up{bottom:calc(100% + 6px)}
+  section.slide .l2-qc>.fb.fbpop.dn{top:calc(100% + 6px)}
+  section.slide .l2-qc>.fb.fbpop::after{content:'  ✕ סגירה';font-size:12.5px;color:#666;font-weight:700;white-space:nowrap}
+  `;
+  document.head.appendChild(st2);
+  document.addEventListener('click', ev => {
+    const slide = ev.target.closest('section.slide'); if (!slide) return;
+    const fbHit = ev.target.closest('.l2-qc>.fb.fbpop');
+    if (fbHit && !ev.target.closest('t,a,.term,button')) { fbHit.style.display = 'none'; return; }
+    const b = ev.target.closest('.l2-qc button'); if (!b) return;
+    const own = b.closest('.l2-qc'), fb = own.querySelector(':scope > div:last-child'); if (!fb) return;
+    slide.querySelectorAll('.l2-qc>.fb.fbpop').forEach(x => { if (x !== fb) x.style.display = 'none'; });
+    slide.querySelectorAll('.l2-qc').forEach(q => { q.style.zIndex = ''; }); own.style.zIndex = '60';
+    const sr = slide.getBoundingClientRect(), r = own.getBoundingClientRect();
+    fb.classList.add('fbpop'); fb.classList.toggle('up', r.top > sr.top + sr.height * 0.42); fb.classList.toggle('dn', !(r.top > sr.top + sr.height * 0.42));
+    fb.style.display = '';
+  });
+  Deck.slides.forEach(d => {
+    const c = CFG[d.id]; if (!c || d.__l5fix) return; d.__l5fix = true;
+    const b = d.build;
+    d.build = function (root, ctx) {
+      b.call(this, root, ctx);
+      if (c.cls) root.classList.add(c.cls);
+      if (c.dropLead) { const p = root.querySelector('p.lead'); if (p) p.remove(); }
+      (c.zoom || []).forEach(([sel, z]) => root.querySelectorAll(sel).forEach(e => { e.style.zoom = z; }));
+      if (ctx.static) return;
+      /* a row of a solution table appears when its first value arrives, so the empty table does not push the slide down */
+      if (c.hideRows) {
+        const rows = () => root.querySelectorAll('table.wbt tbody tr').forEach(tr => { const kc = [...tr.querySelectorAll('td[data-k]')]; const cs = kc.length ? kc : [...tr.children].slice(1); tr.style.display = cs.length && cs.every(td => !td.textContent.trim()) ? 'none' : ''; });
+        rows(); ctx.onStep(() => requestAnimationFrame(rows));
+      }
+      /* the question folds into one line after the first click; its data are in the table */
+      let qd = null, qUser = false;
+      if (c.foldQ) {
+        const q = root.querySelector('.card.l3-q');
+        if (q) {
+          const src = q.querySelector('.l3-src');
+          qd = h('details.card.l3-q.qf5', { open: '' }, h('summary', src || h('span.l3-src', 'השאלה'), h('span.qf5s', '')));
+          [...q.childNodes].forEach(n => qd.appendChild(n)); q.replaceWith(qd);
+          qd.querySelector('summary').addEventListener('click', () => { qUser = true; });
+          ctx.onStep(k => { if (!qUser) qd.open = k === 0; });
+        }
+      }
+      if (!c.fold) return;
+      const notes = [];
+      root.querySelectorAll('.card.rv').forEach(card => {
+        const h3 = card.querySelector('h3'); if (!h3 || !c.fold.includes(h3.textContent.trim())) return;
+        const s = +card.dataset.s;
+        const det = h('details.n5.rv', { 'data-s': s }, h('summary', h3.textContent));
+        card.parentNode.insertBefore(det, card); card.classList.remove('rv'); delete card.dataset.s; h3.style.display = 'none'; det.appendChild(card);
+        det.querySelector('summary').addEventListener('click', () => { det.user = true; });
+        notes.push({ det, s });
+        if (c.foldTo !== undefined) { const col = root.querySelector('.cols'); if (col && col.children[c.foldTo]) col.children[c.foldTo].appendChild(det); }
+      });
+      if (notes.length) ctx.onStep(k => notes.forEach(n => { if (!n.det.user) n.det.open = k === n.s; }));
+    };
+  });
 })();
 
 
