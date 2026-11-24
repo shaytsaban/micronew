@@ -1868,6 +1868,8 @@ const eqs = (a, b) => (Math.abs(Math.round(a / b * 100) / 100 - a / b) < 1e-9 ? 
   .wb3 .wbt,.wb2 .wbt{font-size:17px!important}
   @keyframes l5fly{0%{transform:translate(-60px,-34px) scale(1.9);opacity:0;color:#d97706}55%{opacity:1}100%{transform:none;opacity:1}}
   .wbt td.new,.l5t td.new{animation:l5fly .75s cubic-bezier(.2,.8,.25,1) both;background:#fff4d6}
+  .pslide td.new,.pslide .in.pop{animation:none!important;opacity:1!important;transform:none!important;background:inherit}
+  @media print{td.new,.in.pop{animation:none!important;opacity:1!important;transform:none!important}}
   .l5t{border-collapse:collapse;width:100%;font-size:18px}
   .l5t th{background:#1e2a4a;color:#fff;padding:6px 8px;font-size:15px;text-align:center}
   .l5t td{border:1px solid #d5d9e3;padding:6px 8px;text-align:center;font-weight:700;height:38px}
@@ -1888,7 +1890,25 @@ const eqs = (a, b) => (Math.abs(Math.round(a / b * 100) / 100 - a / b) < 1e-9 ? 
 /* a point that explains itself. ch = PPC chart, host = the element the chart was drawn into.
    o = {cls: 'ok5' (on the curve) | 'in5' (inside) | 'bad5' (outside) | 'gold', label, pos, title, tip (html), r} */
 function ptTip(ch, host, x, y, o = {}) {
-  const g = ch.dot(x, y, { cls: (o.cls || 'gold') + ' tipme', r: o.r || 8, label: o.label, pos: o.pos, layer: o.layer || 'ann', pop: o.pop });
+  /* a point off the curve: dashed connector to the curve and a tag, above or below. If it sits too close to the curve,
+     it is drawn further away on purpose (schematic), so that above / below is always visible */
+  let yy = y;
+  const f = ch.curveFn;
+  if ((o.cls === 'in5' || o.cls === 'bad5') && f && o.rel !== false) {
+    const yc = f(x);
+    if (isFinite(yc) && Math.abs(yc - y) > 1e-9) {
+      const above = y > yc, gap = 30, pc = ch.sy(yc);
+      let pp = ch.sy(y); if (Math.abs(pp - pc) < gap) pp = pc + (above ? -gap : gap);
+      yy = ch.dy(pp);
+      const cls = above ? 'up' : 'dn';
+      PPC.el('line', { class: 'rel5 ' + cls, x1: ch.sx(x), y1: pp + (above ? 9 : -9), x2: ch.sx(x), y2: pc }, ch.layer('ann'));
+      PPC.el('circle', { class: 'relc5 ' + cls, cx: ch.sx(x), cy: pc, r: 3.5 }, ch.layer('ann'));
+      const t = PPC.el('text', { class: 'reltag5 ' + cls, x: ch.sx(x) - 6, y: (pp + pc) / 2 + 5, 'text-anchor': 'end' }, ch.layer('ann'));
+      t.textContent = above ? 'מעל ▲' : 'מתחת ▼';
+    }
+  }
+  if (o.cross) crossMark(ch, x, y, o.crossCls);
+  const g = ch.dot(x, yy, { cls: (o.cls || 'gold') + ' tipme', r: o.r || 9, label: o.label, pos: o.pos, layer: o.layer || 'ann', pop: o.pop });
   host = host || g.dot.ownerSVGElement.parentElement; host.classList.add('ptw');
   const show = ev => {
     if (ev) ev.stopPropagation();
@@ -1906,9 +1926,173 @@ function ptTip(ch, host, x, y, o = {}) {
   g.show = show;
   return g;
 }
+/* a meeting point that cannot be missed: dashed drop lines to both axes, and the exact values in badges on the axes */
+function crossMark(ch, x, y, cls) {
+  const L = ch.layer('ann'), X = ch.sx(x), Y = ch.sy(y), X0 = ch.sx(0), Y0 = ch.sy(0);
+  const g = PPC.el('g', { class: 'xm5 ' + (cls || '') }, L);
+  if (y > 1e-9) PPC.el('line', { class: 'xmd', x1: X, y1: Y, x2: X, y2: Y0 }, g);
+  if (x > 1e-9) PPC.el('line', { class: 'xmd', x1: X, y1: Y, x2: X0, y2: Y }, g);
+  PPC.el('circle', { class: 'xmr', cx: X, cy: Y, r: 15 }, g);
+  const pill = (px, py, txt, anchor) => {
+    const w = String(txt).length * 9 + 14, x0 = anchor === 'end' ? px - w : px - w / 2;
+    PPC.el('rect', { class: 'xmp', x: x0, y: py - 12, width: w, height: 23, rx: 11.5 }, g);
+    const t = PPC.el('text', { class: 'xmt', x: x0 + w / 2, y: py + 5, 'text-anchor': 'middle' }, g); t.textContent = txt;
+  };
+  if (x > 1e-9) pill(X, Y0 + 19, fmt(x), 'middle');
+  if (y > 1e-9) pill(X0 - 6, Y, fmt(y), 'end');
+  return g;
+}
+/* the curve as a function, for the above / below connectors */
+function setCurve(ch, P) {
+  if (!P || P.length < 2) { ch.curveFn = null; return; }
+  ch.curveFn = x => { for (let i = 0; i + 1 < P.length; i++) { const a = P[i], b = P[i + 1]; if (x >= a[0] - 1e-9 && x <= b[0] + 1e-9) return a[1] + (b[1] - a[1]) * (x - a[0]) / (b[0] - a[0]); } return NaN; };
+}
+
+/* point at a line or at a piece of the curve: a balloon with its equation */
+const eqStr = (c, s) => 'y = ' + fmt(Math.round(c * 100) / 100) + (Math.abs(s) < 1e-9 ? '' : ' − ' + (Math.abs(s - 1) < 1e-9 ? '' : fmt(Math.round(s * 100) / 100)) + 'x');
+function hoverEq(ch, a, b, title, extra, cls) {
+  const host = ch.svg.parentElement; if (!host || host.closest('.pslide')) return;
+  const s = (a[1] - b[1]) / (b[0] - a[0]), c = a[1] + s * a[0];
+  const p = PPC.el('path', { class: 'hov5 ' + (cls || ''), d: 'M' + ch.sx(a[0]) + ',' + ch.sy(a[1]) + ' L' + ch.sx(b[0]) + ',' + ch.sy(b[1]) }, ch.layer('curve'));
+  const html = '<b class="t">' + title + '</b><span class="m">' + eqStr(c, s) + '</span>' + (extra ? '<div class="ex5">' + extra + '</div>' : '');
+  const show = ev => {
+    let tip = host.querySelector('.eqtip5'); if (!tip) { tip = h('div.eqtip5'); host.appendChild(tip); }
+    tip.innerHTML = html; tip.style.display = 'block';
+    const hr = host.getBoundingClientRect(); let x = ev.clientX - hr.left, y = ev.clientY - hr.top;
+    let left = x - tip.offsetWidth / 2; left = Math.max(4, Math.min(left, host.clientWidth - tip.offsetWidth - 4));
+    let top = y - tip.offsetHeight - 16; if (top < 2) top = y + 18;
+    tip.style.left = left + 'px'; tip.style.top = top + 'px';
+    host.querySelectorAll('.hov5.on').forEach(e => e.classList.remove('on')); p.classList.add('on');
+  };
+  const hide = () => { const tip = host.querySelector('.eqtip5'); if (tip) tip.style.display = 'none'; p.classList.remove('on'); };
+  p.addEventListener('mousemove', show); p.addEventListener('mouseleave', hide);
+  p.addEventListener('click', ev => { ev.stopPropagation(); show(ev); });
+  return p;
+}
+/* every piece of the curve: its equation and its marginal cost */
+function curveHover(ch, P, names) {
+  const L = 'ABCDEFG';
+  for (let i = 0; i + 1 < P.length; i++) {
+    const a = P[i], b = P[i + 1], sl = (a[1] - b[1]) / (b[0] - a[0]);
+    hoverEq(ch, a, b, 'עקומת התמורה, קטע ' + L[i] + L[i + 1] + (names && names[i] ? ': ' + names[i] + ' מגביל' : ''), 'שיפוע ' + fmt(Math.round(sl * 100) / 100) + ' = העלות השולית של x בקטע', 'seg');
+  }
+}
 /* the legend under a chart with clickable points */
-function ptKey(items) { return h('div', h('div.ptkey', items.map(([c, t]) => h('span', h('i', { style: 'background:' + c }), t))), h('div.clickhint', '👆 לחצו על כל נקודה בגרף לקבלת הסבר')); }
+function ptKey(items) { return h('div.ptkey', items.map(([c, t]) => h('span', h('i', { style: 'background:' + c }), t)), h('span.clickhint', { style: 'margin:0 auto 0 0' }, '👆 לחצו על נקודה להסבר')); }
 const PT_C = { ok5: '#16a34a', in5: '#2563eb', bad5: '#dc2626', gold: '#d4a017' };
+
+/* ===== chart clarity layer (lessons 5 and 6): labels with a halo, lines cropped to the plot, labels pushed apart, full screen view ===== */
+(function () {
+  const st = document.createElement('style');
+  st.textContent = `
+  .ch text.pl,.ch text.bl,.ch text.lbl1,.ch text.lbl2,.ch text.lbl3,.ch text.lblg,.ch text.tl,.ch text.al,.ch text.reltag5{paint-order:stroke;stroke:#fff;stroke-width:5px;stroke-linejoin:round}
+  .ch text.pl{font-size:16px;font-weight:800}
+  .ch .tl{font-size:14px}
+  .ch .al{font-size:16px}
+  .ch .pt{stroke:#fff;stroke-width:3}
+  .ch .rel5{stroke-width:2.6;stroke-dasharray:6 4;fill:none}
+  .ch .rel5.up,.ch .relc5.up{stroke:#dc2626}.ch .rel5.dn,.ch .relc5.dn{stroke:#2563eb}
+  .ch .relc5{fill:#fff;stroke-width:2.5}
+  .ch text.reltag5{font-size:13.5px;font-weight:800}
+  .ch text.reltag5.up{fill:#dc2626}.ch text.reltag5.dn{fill:#2563eb}
+  .ch .xm5 .xmd{stroke:#b7791f;stroke-width:2;stroke-dasharray:5 4}
+  .ch .xm5 .xmr{fill:none;stroke:#d4a017;stroke-width:3;opacity:.85}
+  .ch .xm5 .xmp{fill:#fff8e1;stroke:#d4a017;stroke-width:2}
+  .ch .xm5 .xmt{font-size:14px;font-weight:800;fill:#7a5300}
+  .ch .ldr5{stroke:#9aa3b5;stroke-width:1.3;fill:none}
+  .ch .cut5{font-size:13px;font-weight:800;paint-order:stroke;stroke:#fff;stroke-width:4px}
+  .zbtn5{position:absolute;top:6px;right:8px;z-index:5;border:1.5px solid var(--line);background:#fff;border-radius:9px;padding:2px 9px;font:700 13px Rubik,Heebo,sans-serif;color:var(--ink2);cursor:pointer;opacity:.85}
+  .zbtn5:hover{opacity:1;border-color:var(--ink)}
+  .pslide .zbtn5{display:none}
+  .ch path.hov5{stroke:transparent;stroke-width:20;fill:none;pointer-events:stroke;cursor:help}
+  .ch path.hov5.on{stroke:rgba(242,183,5,.28)}
+  .eqtip5{position:absolute;z-index:31;display:none;pointer-events:none;background:#16213a;color:#fff;border-radius:10px;padding:6px 11px;font-size:15px;line-height:1.4;box-shadow:0 8px 22px rgba(0,0,0,.25);direction:rtl;white-space:nowrap}
+  .eqtip5 b.t{display:block;font-size:13.5px;color:#ffd54a}
+  .eqtip5 .m{font-size:17px;font-weight:800}
+  .eqtip5 .ex5{font-size:13px;color:#cfd6e6}
+  section.slide .solves{margin-top:6px;padding:3px 10px;font-size:13.5px}
+  section.slide .solves .chip{padding:1px 9px;font-size:13px}
+  .zov5{position:fixed;inset:0;z-index:9999;background:rgba(22,33,58,.72);display:flex;align-items:center;justify-content:center}
+  .zov5 .zp{background:#fff;border-radius:16px;padding:12px 16px 8px;box-shadow:0 20px 60px rgba(0,0,0,.4);width:min(94vw,1250px);max-height:94vh;display:flex;flex-direction:column}
+  .zov5 .zp svg{width:100%;height:auto;max-height:84vh}
+  .zov5 .zh{display:flex;justify-content:space-between;align-items:center;font:700 15px Rubik,Heebo,sans-serif;color:var(--ink2);margin-bottom:4px}
+  .zov5 .zh button{border:none;background:var(--ink);color:#fff;border-radius:8px;padding:4px 12px;font:700 14px Rubik,Heebo,sans-serif;cursor:pointer}
+  `;
+  document.head.appendChild(st);
+  const orig = PPC.chart;
+  PPC.chart = function (host, o = {}) {
+    const ch = orig(host, o);
+    const id = 'clp' + Math.random().toString(36).slice(2, 8);
+    const defs = ch.svg.querySelector('defs') || PPC.el('defs', null, ch.svg);
+    const cp = PPC.el('clipPath', { id }, defs);
+    PPC.el('rect', { x: ch.M.l - 6, y: ch.M.t - 6, width: ch.W - ch.M.l - ch.M.r + 12, height: ch.H - ch.M.t - ch.M.b + 12 }, cp);
+    ch.L.curve.setAttribute('clip-path', 'url(#' + id + ')');
+    ch.curveFn = null;
+    zoomBtn(host, ch);
+    watch(ch);
+    return ch;
+  };
+  /* full screen view: a live copy of the chart */
+  function zoomBtn(host, ch) {
+    if (!host || host.closest('.pslide')) return;
+    if (getComputedStyle(host).position === 'static') host.style.position = 'relative';
+    const b = h('button.zbtn5', { type: 'button', title: 'הגדלת הגרף למסך מלא' }, '⤢ הגדלה');
+    b.addEventListener('click', ev => { ev.stopPropagation(); open(ch); });
+    host.appendChild(b);
+  }
+  function open(ch) {
+    const titleEl = ch.svg.closest('section') && ch.svg.closest('section').querySelector('h2');
+    const box = h('div.zp', h('div.zh', h('span', titleEl ? titleEl.textContent : 'הגרף'), h('button', { type: 'button' }, 'סגירה ✕')));
+    const ov = h('div.zov5', box);
+    const copy = () => { const old = box.querySelector('svg'); const c = ch.svg.cloneNode(true); c.querySelectorAll('[clip-path]').forEach(e => { const m = /#([^)]+)/.exec(e.getAttribute('clip-path')); if (m) { const cpn = c.querySelector('#' + CSS.escape(m[1])); if (cpn) { const nid = m[1] + 'z'; cpn.id = nid; e.setAttribute('clip-path', 'url(#' + nid + ')'); } } }); if (old) old.replaceWith(c); else box.appendChild(c); };
+    copy();
+    const mo = new MutationObserver(() => requestAnimationFrame(copy));
+    mo.observe(ch.svg, { subtree: true, childList: true, attributes: true });
+    const close = () => { mo.disconnect(); ov.remove(); document.removeEventListener('keydown', key, true); };
+    const key = ev => { if (ev.key === 'Escape') { ev.stopPropagation(); close(); } };
+    document.addEventListener('keydown', key, true);
+    ov.addEventListener('click', ev => { if (ev.target === ov || ev.target.tagName === 'BUTTON') close(); });
+    document.body.appendChild(ov);
+  }
+  /* labels pushed apart: after each redraw, a label that overlaps another label or a point moves to the nearest free place */
+  function watch(ch) {
+    let busy = false, q = false;
+    const mo = new MutationObserver(() => { if (busy || q) return; q = true; requestAnimationFrame(() => { q = false; busy = true; try { declutter(ch); } catch (e) { } busy = false; mo.takeRecords(); }); });
+    mo.observe(ch.svg, { subtree: true, childList: true });
+    ch.declutter = () => { busy = true; try { declutter(ch); } catch (e) { } busy = false; mo.takeRecords(); };
+  }
+  const SEL = 'text.pl, text.lbl1, text.lbl2, text.lbl3, text.lblg, text.reltag5, text.bl, text.cut5';
+  function declutter(ch) {
+    const svg = ch.svg; if (!svg.isConnected || !svg.getBoundingClientRect().width) return;
+    svg.querySelectorAll('.ldr5').forEach(e => e.remove());
+    const boxes = [];
+    svg.querySelectorAll('circle.pt').forEach(c => { const r = +c.getAttribute('r') || 7, cx = +c.getAttribute('cx'), cy = +c.getAttribute('cy'); boxes.push({ x: cx - r, y: cy - r, w: 2 * r, h: 2 * r }); });
+    svg.querySelectorAll('.xmp').forEach(r => boxes.push({ x: +r.getAttribute('x'), y: +r.getAttribute('y'), w: +r.getAttribute('width'), h: +r.getAttribute('height') }));
+    const hit = (a, b) => a.x < b.x + b.w && b.x < a.x + a.w && a.y < b.y + b.h && b.y < a.y + a.h;
+    const W = ch.W, H = ch.H;
+    const texts = [...svg.querySelectorAll(SEL)].filter(t => t.textContent.trim() && !t.closest('.xm5'));
+    texts.forEach(t => {
+      if (t.dataset.ox === undefined) { t.dataset.ox = t.getAttribute('x'); t.dataset.oy = t.getAttribute('y'); }
+      else { t.setAttribute('x', t.dataset.ox); t.setAttribute('y', t.dataset.oy); }
+    });
+    const OFF = [[0, 0], [0, -15], [0, 15], [0, -30], [0, 30], [22, 0], [-22, 0], [22, -15], [-22, -15], [22, 15], [-22, 15], [0, -45], [0, 45], [40, -20], [-40, -20]];
+    texts.forEach(t => {
+      const ox = +t.dataset.ox, oy = +t.dataset.oy;
+      let b0; try { b0 = t.getBBox(); } catch (e) { return; }
+      if (!b0.width) return;
+      const pad = 2;
+      for (const [dx, dy] of OFF) {
+        const b = { x: b0.x + dx - pad, y: b0.y + dy - pad, w: b0.width + 2 * pad, h: b0.height + 2 * pad };
+        if (b.x < 0 || b.y < 0 || b.x + b.w > W || b.y + b.h > H) continue;
+        if (!boxes.some(o => hit(b, o))) {
+          if (dx || dy) { t.setAttribute('x', ox + dx); t.setAttribute('y', oy + dy); if (Math.abs(dy) >= 30 || Math.abs(dx) >= 30) { const l = PPC.el('line', { class: 'ldr5', x1: b0.x + b0.width / 2, y1: b0.y + b0.height / 2, x2: b.x + b.w / 2, y2: b.y + b.h / 2 }); t.parentNode.insertBefore(l, t); } }
+          boxes.push(b); return;
+        }
+      }
+      boxes.push({ x: b0.x, y: b0.y, w: b0.width, h: b0.height });
+    });
+  }
+})();
 
 /* ===== costs on the built curve: the students try first, then the graphical solution is revealed click by click ===== */
 function costSlide(o) {
@@ -1976,7 +2160,18 @@ function stageSlide(o) {
       const host = h('div');
       const right = h('div.stack.l2-tight', host, exp);
       (o.after || []).forEach(a => right.appendChild(rv(a[0], a[1])));
-      if (o.wb) { root.appendChild(h('div.wb.wb3', h('div.stack.l2-tight', left.children[0], T.el), h('div.stack.l2-tight', tbl, exp), right)); }
+      let bigQ = null, bigT = null, bigU = false;
+      if (o.wb === 'big') {
+        host.className = 'chbox5';
+        if (ctx.static) root.appendChild(h('div.m5v', h('div.stack.l2-tight', left.children[0], tbl), h('div.stack.l2-tight', host, exp)));
+        else {
+          bigQ = h('details.card.l3-q.qf5', { open: '' }, h('summary', h('span.l3-src', o.src || 'שאלה'), h('span.qf5s', '')), h('div.qf5b', { html: o.q }));
+          bigT = h('details.tf5', { open: '' }, h('summary', 'נסו לבד, ואז המשיכו בלחיצות'), T.el);
+          [bigQ, bigT].forEach(d => d.querySelector('summary').addEventListener('click', () => { bigU = true; }));
+          root.appendChild(h('div.m5v', h('div.stack.l2-tight', bigQ, bigT, tbl), h('div.stack.l2-tight', host, exp)));
+        }
+      }
+      else if (o.wb) { root.appendChild(h('div.wb.wb3', h('div.stack.l2-tight', left.children[0], T.el), h('div.stack.l2-tight', tbl, exp), right)); }
       else root.appendChild(h('div.cols', left, right));
       const ch = o.chart(host);
       let K = 0, sel = null;
@@ -1990,7 +2185,7 @@ function stageSlide(o) {
         exp.innerHTML = o.say(k);
       }
       cells.forEach(([td, c]) => { if (typeof c !== 'string') td.addEventListener('click', () => { if (K < c.s) return; sel = sel === c.s ? null : c.s; paint(); }); });
-      const draw = k => { K = k; sel = null; paint(); };
+      const draw = k => { K = k; sel = null; paint(); if (bigQ && !bigU) { bigQ.open = k === 0; bigT.open = k === 0; } };
       draw(ctx.static ? o.n : 0); ctx.onStep(k => draw(k));
     }
   });
@@ -2144,12 +2339,15 @@ function conDraw(ch, E, s) {
       ch.curve([[0, f.Y], [f.X, 0]], { cls: 'cl' + (i + 1) + (s.dim ? ' dim' : ''), animate: s.anim === 'l' + (i + 1), dur: 1 });
       const lp = f.lab || [f.X * 0.16, f.Y * 0.84];
       if (!s.dim) ch.text(lp[0] + ch.xmax * 0.02, lp[1] + ch.ymax * 0.02, f.ln || 'קו ה' + f.name, 'lbl' + (i + 1), 'start');
+      if (typeof hoverEq === 'function') hoverEq(ch, [0, f.Y], [f.X, 0], f.ln || 'קו ה' + f.name, 'כל הצירופים שמנצלים את כל ה' + f.name + '.');
     }
     const only = s.only === undefined || s.only === i;
     if (v === 1 || (v >= 2 && !s.dim && only) || s.ends) {
-      ctick(ch, 'x', f.X, 'lbl' + (i + 1)); ctick(ch, 'y', f.Y, 'lbl' + (i + 1));
-      ch.dot(f.X, 0, { cls: c, r: 6, pop: s.anim === 'e' + (i + 1) + 'x' }); ch.dot(0, f.Y, { cls: c, r: 6, pop: s.anim === 'e' + (i + 1) + 'y' });
+      if (f.X <= ch.xmax) { ctick(ch, 'x', f.X, 'lbl' + (i + 1)); ch.dot(f.X, 0, { cls: c, r: 6, pop: s.anim === 'e' + (i + 1) + 'x' }); }
+      if (f.Y <= ch.ymax) { ctick(ch, 'y', f.Y, 'lbl' + (i + 1)); ch.dot(0, f.Y, { cls: c, r: 6, pop: s.anim === 'e' + (i + 1) + 'y' }); }
     }
+    if (v >= 2 && f.Y > ch.ymax) ch.text((f.Y - ch.ymax) * f.X / f.Y + ch.xmax * 0.015, ch.ymax * 0.965, '↑ עד ' + fmt(f.Y), 'cut5 lbl' + (i + 1), 'start');
+    if (v >= 2 && f.X > ch.xmax) ch.text(ch.xmax * 0.995, f.Y - f.Y / f.X * ch.xmax + ch.ymax * 0.03, 'עד ' + fmt(f.X) + ' →', 'cut5 lbl' + (i + 1), 'end');
   });
   if (s.e1x) { ctick(ch, 'x', E.F[0].X, 'lbl1'); ch.dot(E.F[0].X, 0, { cls: 'c1', r: 6, pop: s.anim === 'e1x' }); }
   if (s.e1y) { ctick(ch, 'y', E.F[0].Y, 'lbl1'); ch.dot(0, E.F[0].Y, { cls: 'c1', r: 6, pop: s.anim === 'e1y' }); }
@@ -2159,7 +2357,9 @@ function conDraw(ch, E, s) {
   if (s.p2) ch.curve([E.P[1], E.P[2]], { cls: 'ppcg', animate: s.anim === 'p2', dur: 0.9 });
   if (s.p1 && s.dim) { ctick(ch, 'y', E.P[0][1]); ch.dot(E.P[0][0], E.P[0][1], { cls: 'gold', r: 7, label: 'A' }); }
   if (s.p2 && s.dim) { ctick(ch, 'x', E.P[2][0]); ch.dot(E.P[2][0], E.P[2][1], { cls: 'gold', r: 7, label: 'C' }); }
-  if (s.ix) ch.dot(E.ix, E.iy, { cls: 'gold', r: 8, label: (s.ixl || 'B') + ' (' + fmt(E.ix) + ', ' + fmt(E.iy) + ')', pop: s.anim === 'ix' });
+  if (s.ix) { if (typeof crossMark === 'function') crossMark(ch, E.ix, E.iy); ch.dot(E.ix, E.iy, { cls: 'gold', r: 8, label: (s.ixl || 'B') + ' (' + fmt(E.ix) + ', ' + fmt(E.iy) + ')', pop: s.anim === 'ix' }); }
+  if (typeof setCurve === 'function') setCurve(ch, s.p1 && s.p2 ? E.P : null);
+  if (typeof curveHover === 'function' && s.p1 && s.p2) curveHover(ch, E.P, [E.F[E.lo].name, E.F[E.hi].name]);
   if (s.onSeg && s.p1 && s.p2) [0, 1].forEach(i => {
     const a = E.P[i], b = E.P[i + 1];
     const hit = PPC.el('path', { class: 'segc', d: `M${ch.sx(a[0])},${ch.sy(a[1])} L${ch.sx(b[0])},${ch.sy(b[1])}` }, ch.layer('ann'));
@@ -2283,11 +2483,23 @@ const t6Short = '<b class="hc">״הדר״</b>: ' + m('600') + ' חולצות (x)
 const t6Story = 'שני משקים מייצרים חולצות (x) וטלפונים (y). <b class="hc">משק ״הדר״</b> יכול לייצר ' + m('600') + ' חולצות או ' + m('300') + ' טלפונים. <b class="zc">משק ״זית״</b> יכול לייצר ' + m('400') + ' חולצות או ' + m('400') + ' טלפונים. העלויות השוליות קבועות, ולכן כל עקומה היא קו ישר.';
 /* one chart per economy, same scale for both so the eye can compare */
 function t6Chart(host, o = {}) {
-  return PPC.chart(host, { w: 560, h: o.h || 168, xmax: o.xmax || 680, ymax: o.ymax || 540, xLabel: o.xl || 'חולצות (x)', yLabel: o.yl || 'טלפונים (y)', ticksX: [], ticksY: [], grid: false, showTicks: false });
+  const ch = PPC.chart(host, { w: 600, h: o.h ? 330 : 205, xmax: o.xmax || 680, ymax: o.ymax || 540, xLabel: o.xl || 'חולצות (x)', yLabel: o.yl || 'טלפונים (y)', ticksX: [], ticksY: [], grid: false, showTicks: false });
+  /* consumption lines and the joint curve explain themselves when pointed at */
+  const cv = ch.curve;
+  ch.curve = (pts, opt = {}) => {
+    const r = cv(pts, opt), c = opt.cls || '';
+    if (typeof hoverEq === 'function' && pts.length === 2 && !/dim/.test(c)) {
+      if (/cons6/.test(c)) hoverEq(ch, pts[0], pts[1], 'עקומת אפשרויות הצריכה', 'השיפוע הוא המחיר העולמי');
+      else if (/j6/.test(c)) hoverEq(ch, pts[0], pts[1], 'העקומה המשותפת', 'השיפוע הוא העלות השולית בקטע');
+    }
+    return r;
+  };
+  return ch;
 }
 /* draws the production possibility line of economy E (optionally dimmed) with its end ticks and its name */
 function t6PPC(ch, E, o = {}) {
   ch.curve([[0, E.Y], [E.X, 0]], { cls: E.c + (o.dim ? ' dim6' : ''), animate: o.anim, dur: 1 });
+  if (!o.dim && typeof hoverEq === 'function') hoverEq(ch, [0, E.Y], [E.X, 0], 'עקומת התמורה של ״' + E.n + '״', 'שיפוע ' + fmt(Math.round(E.Y / E.X * 1000) / 1000) + ' = העלות השולית של x');
   if (!o.noTicks) { t6tick(ch, 'x', E.X, E.lc); t6tick(ch, 'y', E.Y, E.lc); }
 }
 /* tick labels placed in pixels, clear of the points that sit on the axes */
@@ -3024,6 +3236,65 @@ slide({
   for (let i = S.length - 1; i >= 0; i--) if (!KEEP.includes(S[i].id)) S.splice(i, 1);
   S.sort((a, b) => KEEP.indexOf(a.id) - KEEP.indexOf(b.id));
   Object.keys(GLOSS).forEach(k => { if (GLOSS[k].slide && !KEEP.includes(GLOSS[k].slide)) delete GLOSS[k].slide; });
+})();
+
+/* ===== lesson 6: charts first. The chart column is wider and the charts taller; the practice question moves to the text column,
+   and cards of definitions and rules open when they appear and then fold into a one-line note (a click opens them again) ===== */
+(function () {
+  const st = document.createElement('style');
+  st.textContent = `
+  .t6g.t6big{grid-template-columns:minmax(0,.9fr) minmax(0,1.24fr)}
+  .t6big .t6ch{gap:6px}
+  .t6big .t6ch>div{background:#fff;border-radius:12px;box-shadow:0 2px 8px rgba(22,33,58,.07)}
+  details.n6{border:1.5px solid var(--line);border-radius:11px;background:#fff}
+  details.n6>summary{cursor:pointer;list-style:none;padding:5px 11px;font-weight:800;font-size:15px;color:var(--ink2);display:flex;gap:8px;align-items:center}
+  details.n6>summary::-webkit-details-marker{display:none}
+  details.n6>summary::after{content:'▾ ביאור, לחצו לפתיחה';font-size:12.5px;font-weight:600;color:var(--mut);margin-right:auto}
+  details.n6[open]>summary::after{content:'▴ לקיפול'}
+  details.n6>.card{margin:0;border:none;box-shadow:none}
+  details.n6[open]>summary{border-bottom:1px dashed var(--line)}
+  .t6g.t6big.t6even{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
+  .t6big .wbx{min-height:0;padding:6px 11px}
+  .t6big .l2-qc{padding:7px 11px}.t6big .l2-qc .qt{font-size:15.5px;margin-bottom:4px}.t6big .l2-qc .ops .btn{padding:3px 11px;font-size:14.5px}
+  .t6big details.qf5{padding:6px 11px}
+  `;
+  document.head.appendChild(st);
+  Deck.slides.forEach(d => {
+    const b = d.build; if (!b || d.__t6fix) return; d.__t6fix = true;
+    d.build = function (root, ctx) {
+      b.call(this, root, ctx);
+      const g = root.querySelector('.t6g'); if (!g || g.children.length < 2) return;
+      const content = g.children[0], charts = g.children[1];
+      if (!charts.querySelector('svg.ch')) return;
+      g.classList.add('t6big'); if (d.id === 'x2' || d.id === 'x1') g.classList.add('t6even');
+      [...charts.children].filter(e => e.classList.contains('l2-qc')).forEach(e => content.appendChild(e));
+      if (ctx.static) return;
+      const notes = [];
+      [...content.children].forEach(c => {
+        if (!c.classList.contains('card') || c.classList.contains('l3-q') || !c.classList.contains('rv')) return;
+        const h3 = c.querySelector('h3'); if (!h3) return;
+        const s = +c.dataset.s;
+        const det = h('details.n6.rv', { 'data-s': s }, h('summary', h3.textContent));
+        c.parentNode.insertBefore(det, c); c.classList.remove('rv'); delete c.dataset.s; h3.style.display = 'none'; det.appendChild(c);
+        det.querySelector('summary').addEventListener('click', () => { det.user = true; });
+        notes.push({ det, s });
+      });
+      /* the question folds into one line after the first click */
+      const q = content.querySelector(':scope > .card.l3-q');
+      let qd = null, qUser = false;
+      if (q) {
+        const src = q.querySelector('.l3-src');
+        qd = h('details.card.l3-q.qf5', { open: '' }, h('summary', src || h('span.l3-src', 'השאלה'), h('span.qf5s', '')));
+        [...q.childNodes].forEach(n => qd.appendChild(n));
+        q.replaceWith(qd);
+        qd.querySelector('summary').addEventListener('click', () => { qUser = true; });
+      }
+      ctx.onStep(k => {
+        notes.forEach(n => { if (!n.det.user) n.det.open = k === n.s; });
+        if (qd && !qUser) qd.open = k === 0;
+      });
+    };
+  });
 })();
 
 

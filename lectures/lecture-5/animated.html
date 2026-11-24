@@ -1890,7 +1890,25 @@ const eqs = (a, b) => (Math.abs(Math.round(a / b * 100) / 100 - a / b) < 1e-9 ? 
 /* a point that explains itself. ch = PPC chart, host = the element the chart was drawn into.
    o = {cls: 'ok5' (on the curve) | 'in5' (inside) | 'bad5' (outside) | 'gold', label, pos, title, tip (html), r} */
 function ptTip(ch, host, x, y, o = {}) {
-  const g = ch.dot(x, y, { cls: (o.cls || 'gold') + ' tipme', r: o.r || 8, label: o.label, pos: o.pos, layer: o.layer || 'ann', pop: o.pop });
+  /* a point off the curve: dashed connector to the curve and a tag, above or below. If it sits too close to the curve,
+     it is drawn further away on purpose (schematic), so that above / below is always visible */
+  let yy = y;
+  const f = ch.curveFn;
+  if ((o.cls === 'in5' || o.cls === 'bad5') && f && o.rel !== false) {
+    const yc = f(x);
+    if (isFinite(yc) && Math.abs(yc - y) > 1e-9) {
+      const above = y > yc, gap = 30, pc = ch.sy(yc);
+      let pp = ch.sy(y); if (Math.abs(pp - pc) < gap) pp = pc + (above ? -gap : gap);
+      yy = ch.dy(pp);
+      const cls = above ? 'up' : 'dn';
+      PPC.el('line', { class: 'rel5 ' + cls, x1: ch.sx(x), y1: pp + (above ? 9 : -9), x2: ch.sx(x), y2: pc }, ch.layer('ann'));
+      PPC.el('circle', { class: 'relc5 ' + cls, cx: ch.sx(x), cy: pc, r: 3.5 }, ch.layer('ann'));
+      const t = PPC.el('text', { class: 'reltag5 ' + cls, x: ch.sx(x) - 6, y: (pp + pc) / 2 + 5, 'text-anchor': 'end' }, ch.layer('ann'));
+      t.textContent = above ? 'מעל ▲' : 'מתחת ▼';
+    }
+  }
+  if (o.cross) crossMark(ch, x, y, o.crossCls);
+  const g = ch.dot(x, yy, { cls: (o.cls || 'gold') + ' tipme', r: o.r || 9, label: o.label, pos: o.pos, layer: o.layer || 'ann', pop: o.pop });
   host = host || g.dot.ownerSVGElement.parentElement; host.classList.add('ptw');
   const show = ev => {
     if (ev) ev.stopPropagation();
@@ -1908,9 +1926,173 @@ function ptTip(ch, host, x, y, o = {}) {
   g.show = show;
   return g;
 }
+/* a meeting point that cannot be missed: dashed drop lines to both axes, and the exact values in badges on the axes */
+function crossMark(ch, x, y, cls) {
+  const L = ch.layer('ann'), X = ch.sx(x), Y = ch.sy(y), X0 = ch.sx(0), Y0 = ch.sy(0);
+  const g = PPC.el('g', { class: 'xm5 ' + (cls || '') }, L);
+  if (y > 1e-9) PPC.el('line', { class: 'xmd', x1: X, y1: Y, x2: X, y2: Y0 }, g);
+  if (x > 1e-9) PPC.el('line', { class: 'xmd', x1: X, y1: Y, x2: X0, y2: Y }, g);
+  PPC.el('circle', { class: 'xmr', cx: X, cy: Y, r: 15 }, g);
+  const pill = (px, py, txt, anchor) => {
+    const w = String(txt).length * 9 + 14, x0 = anchor === 'end' ? px - w : px - w / 2;
+    PPC.el('rect', { class: 'xmp', x: x0, y: py - 12, width: w, height: 23, rx: 11.5 }, g);
+    const t = PPC.el('text', { class: 'xmt', x: x0 + w / 2, y: py + 5, 'text-anchor': 'middle' }, g); t.textContent = txt;
+  };
+  if (x > 1e-9) pill(X, Y0 + 19, fmt(x), 'middle');
+  if (y > 1e-9) pill(X0 - 6, Y, fmt(y), 'end');
+  return g;
+}
+/* the curve as a function, for the above / below connectors */
+function setCurve(ch, P) {
+  if (!P || P.length < 2) { ch.curveFn = null; return; }
+  ch.curveFn = x => { for (let i = 0; i + 1 < P.length; i++) { const a = P[i], b = P[i + 1]; if (x >= a[0] - 1e-9 && x <= b[0] + 1e-9) return a[1] + (b[1] - a[1]) * (x - a[0]) / (b[0] - a[0]); } return NaN; };
+}
+
+/* point at a line or at a piece of the curve: a balloon with its equation */
+const eqStr = (c, s) => 'y = ' + fmt(Math.round(c * 100) / 100) + (Math.abs(s) < 1e-9 ? '' : ' − ' + (Math.abs(s - 1) < 1e-9 ? '' : fmt(Math.round(s * 100) / 100)) + 'x');
+function hoverEq(ch, a, b, title, extra, cls) {
+  const host = ch.svg.parentElement; if (!host || host.closest('.pslide')) return;
+  const s = (a[1] - b[1]) / (b[0] - a[0]), c = a[1] + s * a[0];
+  const p = PPC.el('path', { class: 'hov5 ' + (cls || ''), d: 'M' + ch.sx(a[0]) + ',' + ch.sy(a[1]) + ' L' + ch.sx(b[0]) + ',' + ch.sy(b[1]) }, ch.layer('curve'));
+  const html = '<b class="t">' + title + '</b><span class="m">' + eqStr(c, s) + '</span>' + (extra ? '<div class="ex5">' + extra + '</div>' : '');
+  const show = ev => {
+    let tip = host.querySelector('.eqtip5'); if (!tip) { tip = h('div.eqtip5'); host.appendChild(tip); }
+    tip.innerHTML = html; tip.style.display = 'block';
+    const hr = host.getBoundingClientRect(); let x = ev.clientX - hr.left, y = ev.clientY - hr.top;
+    let left = x - tip.offsetWidth / 2; left = Math.max(4, Math.min(left, host.clientWidth - tip.offsetWidth - 4));
+    let top = y - tip.offsetHeight - 16; if (top < 2) top = y + 18;
+    tip.style.left = left + 'px'; tip.style.top = top + 'px';
+    host.querySelectorAll('.hov5.on').forEach(e => e.classList.remove('on')); p.classList.add('on');
+  };
+  const hide = () => { const tip = host.querySelector('.eqtip5'); if (tip) tip.style.display = 'none'; p.classList.remove('on'); };
+  p.addEventListener('mousemove', show); p.addEventListener('mouseleave', hide);
+  p.addEventListener('click', ev => { ev.stopPropagation(); show(ev); });
+  return p;
+}
+/* every piece of the curve: its equation and its marginal cost */
+function curveHover(ch, P, names) {
+  const L = 'ABCDEFG';
+  for (let i = 0; i + 1 < P.length; i++) {
+    const a = P[i], b = P[i + 1], sl = (a[1] - b[1]) / (b[0] - a[0]);
+    hoverEq(ch, a, b, 'עקומת התמורה, קטע ' + L[i] + L[i + 1] + (names && names[i] ? ': ' + names[i] + ' מגביל' : ''), 'שיפוע ' + fmt(Math.round(sl * 100) / 100) + ' = העלות השולית של x בקטע', 'seg');
+  }
+}
 /* the legend under a chart with clickable points */
-function ptKey(items) { return h('div', h('div.ptkey', items.map(([c, t]) => h('span', h('i', { style: 'background:' + c }), t))), h('div.clickhint', '👆 לחצו על כל נקודה בגרף לקבלת הסבר')); }
+function ptKey(items) { return h('div.ptkey', items.map(([c, t]) => h('span', h('i', { style: 'background:' + c }), t)), h('span.clickhint', { style: 'margin:0 auto 0 0' }, '👆 לחצו על נקודה להסבר')); }
 const PT_C = { ok5: '#16a34a', in5: '#2563eb', bad5: '#dc2626', gold: '#d4a017' };
+
+/* ===== chart clarity layer (lessons 5 and 6): labels with a halo, lines cropped to the plot, labels pushed apart, full screen view ===== */
+(function () {
+  const st = document.createElement('style');
+  st.textContent = `
+  .ch text.pl,.ch text.bl,.ch text.lbl1,.ch text.lbl2,.ch text.lbl3,.ch text.lblg,.ch text.tl,.ch text.al,.ch text.reltag5{paint-order:stroke;stroke:#fff;stroke-width:5px;stroke-linejoin:round}
+  .ch text.pl{font-size:16px;font-weight:800}
+  .ch .tl{font-size:14px}
+  .ch .al{font-size:16px}
+  .ch .pt{stroke:#fff;stroke-width:3}
+  .ch .rel5{stroke-width:2.6;stroke-dasharray:6 4;fill:none}
+  .ch .rel5.up,.ch .relc5.up{stroke:#dc2626}.ch .rel5.dn,.ch .relc5.dn{stroke:#2563eb}
+  .ch .relc5{fill:#fff;stroke-width:2.5}
+  .ch text.reltag5{font-size:13.5px;font-weight:800}
+  .ch text.reltag5.up{fill:#dc2626}.ch text.reltag5.dn{fill:#2563eb}
+  .ch .xm5 .xmd{stroke:#b7791f;stroke-width:2;stroke-dasharray:5 4}
+  .ch .xm5 .xmr{fill:none;stroke:#d4a017;stroke-width:3;opacity:.85}
+  .ch .xm5 .xmp{fill:#fff8e1;stroke:#d4a017;stroke-width:2}
+  .ch .xm5 .xmt{font-size:14px;font-weight:800;fill:#7a5300}
+  .ch .ldr5{stroke:#9aa3b5;stroke-width:1.3;fill:none}
+  .ch .cut5{font-size:13px;font-weight:800;paint-order:stroke;stroke:#fff;stroke-width:4px}
+  .zbtn5{position:absolute;top:6px;right:8px;z-index:5;border:1.5px solid var(--line);background:#fff;border-radius:9px;padding:2px 9px;font:700 13px Rubik,Heebo,sans-serif;color:var(--ink2);cursor:pointer;opacity:.85}
+  .zbtn5:hover{opacity:1;border-color:var(--ink)}
+  .pslide .zbtn5{display:none}
+  .ch path.hov5{stroke:transparent;stroke-width:20;fill:none;pointer-events:stroke;cursor:help}
+  .ch path.hov5.on{stroke:rgba(242,183,5,.28)}
+  .eqtip5{position:absolute;z-index:31;display:none;pointer-events:none;background:#16213a;color:#fff;border-radius:10px;padding:6px 11px;font-size:15px;line-height:1.4;box-shadow:0 8px 22px rgba(0,0,0,.25);direction:rtl;white-space:nowrap}
+  .eqtip5 b.t{display:block;font-size:13.5px;color:#ffd54a}
+  .eqtip5 .m{font-size:17px;font-weight:800}
+  .eqtip5 .ex5{font-size:13px;color:#cfd6e6}
+  section.slide .solves{margin-top:6px;padding:3px 10px;font-size:13.5px}
+  section.slide .solves .chip{padding:1px 9px;font-size:13px}
+  .zov5{position:fixed;inset:0;z-index:9999;background:rgba(22,33,58,.72);display:flex;align-items:center;justify-content:center}
+  .zov5 .zp{background:#fff;border-radius:16px;padding:12px 16px 8px;box-shadow:0 20px 60px rgba(0,0,0,.4);width:min(94vw,1250px);max-height:94vh;display:flex;flex-direction:column}
+  .zov5 .zp svg{width:100%;height:auto;max-height:84vh}
+  .zov5 .zh{display:flex;justify-content:space-between;align-items:center;font:700 15px Rubik,Heebo,sans-serif;color:var(--ink2);margin-bottom:4px}
+  .zov5 .zh button{border:none;background:var(--ink);color:#fff;border-radius:8px;padding:4px 12px;font:700 14px Rubik,Heebo,sans-serif;cursor:pointer}
+  `;
+  document.head.appendChild(st);
+  const orig = PPC.chart;
+  PPC.chart = function (host, o = {}) {
+    const ch = orig(host, o);
+    const id = 'clp' + Math.random().toString(36).slice(2, 8);
+    const defs = ch.svg.querySelector('defs') || PPC.el('defs', null, ch.svg);
+    const cp = PPC.el('clipPath', { id }, defs);
+    PPC.el('rect', { x: ch.M.l - 6, y: ch.M.t - 6, width: ch.W - ch.M.l - ch.M.r + 12, height: ch.H - ch.M.t - ch.M.b + 12 }, cp);
+    ch.L.curve.setAttribute('clip-path', 'url(#' + id + ')');
+    ch.curveFn = null;
+    zoomBtn(host, ch);
+    watch(ch);
+    return ch;
+  };
+  /* full screen view: a live copy of the chart */
+  function zoomBtn(host, ch) {
+    if (!host || host.closest('.pslide')) return;
+    if (getComputedStyle(host).position === 'static') host.style.position = 'relative';
+    const b = h('button.zbtn5', { type: 'button', title: 'הגדלת הגרף למסך מלא' }, '⤢ הגדלה');
+    b.addEventListener('click', ev => { ev.stopPropagation(); open(ch); });
+    host.appendChild(b);
+  }
+  function open(ch) {
+    const titleEl = ch.svg.closest('section') && ch.svg.closest('section').querySelector('h2');
+    const box = h('div.zp', h('div.zh', h('span', titleEl ? titleEl.textContent : 'הגרף'), h('button', { type: 'button' }, 'סגירה ✕')));
+    const ov = h('div.zov5', box);
+    const copy = () => { const old = box.querySelector('svg'); const c = ch.svg.cloneNode(true); c.querySelectorAll('[clip-path]').forEach(e => { const m = /#([^)]+)/.exec(e.getAttribute('clip-path')); if (m) { const cpn = c.querySelector('#' + CSS.escape(m[1])); if (cpn) { const nid = m[1] + 'z'; cpn.id = nid; e.setAttribute('clip-path', 'url(#' + nid + ')'); } } }); if (old) old.replaceWith(c); else box.appendChild(c); };
+    copy();
+    const mo = new MutationObserver(() => requestAnimationFrame(copy));
+    mo.observe(ch.svg, { subtree: true, childList: true, attributes: true });
+    const close = () => { mo.disconnect(); ov.remove(); document.removeEventListener('keydown', key, true); };
+    const key = ev => { if (ev.key === 'Escape') { ev.stopPropagation(); close(); } };
+    document.addEventListener('keydown', key, true);
+    ov.addEventListener('click', ev => { if (ev.target === ov || ev.target.tagName === 'BUTTON') close(); });
+    document.body.appendChild(ov);
+  }
+  /* labels pushed apart: after each redraw, a label that overlaps another label or a point moves to the nearest free place */
+  function watch(ch) {
+    let busy = false, q = false;
+    const mo = new MutationObserver(() => { if (busy || q) return; q = true; requestAnimationFrame(() => { q = false; busy = true; try { declutter(ch); } catch (e) { } busy = false; mo.takeRecords(); }); });
+    mo.observe(ch.svg, { subtree: true, childList: true });
+    ch.declutter = () => { busy = true; try { declutter(ch); } catch (e) { } busy = false; mo.takeRecords(); };
+  }
+  const SEL = 'text.pl, text.lbl1, text.lbl2, text.lbl3, text.lblg, text.reltag5, text.bl, text.cut5';
+  function declutter(ch) {
+    const svg = ch.svg; if (!svg.isConnected || !svg.getBoundingClientRect().width) return;
+    svg.querySelectorAll('.ldr5').forEach(e => e.remove());
+    const boxes = [];
+    svg.querySelectorAll('circle.pt').forEach(c => { const r = +c.getAttribute('r') || 7, cx = +c.getAttribute('cx'), cy = +c.getAttribute('cy'); boxes.push({ x: cx - r, y: cy - r, w: 2 * r, h: 2 * r }); });
+    svg.querySelectorAll('.xmp').forEach(r => boxes.push({ x: +r.getAttribute('x'), y: +r.getAttribute('y'), w: +r.getAttribute('width'), h: +r.getAttribute('height') }));
+    const hit = (a, b) => a.x < b.x + b.w && b.x < a.x + a.w && a.y < b.y + b.h && b.y < a.y + a.h;
+    const W = ch.W, H = ch.H;
+    const texts = [...svg.querySelectorAll(SEL)].filter(t => t.textContent.trim() && !t.closest('.xm5'));
+    texts.forEach(t => {
+      if (t.dataset.ox === undefined) { t.dataset.ox = t.getAttribute('x'); t.dataset.oy = t.getAttribute('y'); }
+      else { t.setAttribute('x', t.dataset.ox); t.setAttribute('y', t.dataset.oy); }
+    });
+    const OFF = [[0, 0], [0, -15], [0, 15], [0, -30], [0, 30], [22, 0], [-22, 0], [22, -15], [-22, -15], [22, 15], [-22, 15], [0, -45], [0, 45], [40, -20], [-40, -20]];
+    texts.forEach(t => {
+      const ox = +t.dataset.ox, oy = +t.dataset.oy;
+      let b0; try { b0 = t.getBBox(); } catch (e) { return; }
+      if (!b0.width) return;
+      const pad = 2;
+      for (const [dx, dy] of OFF) {
+        const b = { x: b0.x + dx - pad, y: b0.y + dy - pad, w: b0.width + 2 * pad, h: b0.height + 2 * pad };
+        if (b.x < 0 || b.y < 0 || b.x + b.w > W || b.y + b.h > H) continue;
+        if (!boxes.some(o => hit(b, o))) {
+          if (dx || dy) { t.setAttribute('x', ox + dx); t.setAttribute('y', oy + dy); if (Math.abs(dy) >= 30 || Math.abs(dx) >= 30) { const l = PPC.el('line', { class: 'ldr5', x1: b0.x + b0.width / 2, y1: b0.y + b0.height / 2, x2: b.x + b.w / 2, y2: b.y + b.h / 2 }); t.parentNode.insertBefore(l, t); } }
+          boxes.push(b); return;
+        }
+      }
+      boxes.push({ x: b0.x, y: b0.y, w: b0.width, h: b0.height });
+    });
+  }
+})();
 
 /* ===== lesson 5 cover ===== */
 slide({
@@ -1933,8 +2115,10 @@ slide({
 (function () {
   const st = document.createElement('style');
   st.textContent = `
-  .d0g{display:grid;grid-template-columns:minmax(0,1.7fr) minmax(0,.9fr);gap:14px;align-items:start}.d0g .d0s{display:flex;flex-direction:column;gap:8px}
-  .d0c{background:#fff;border:2px solid #d5d9e3;border-radius:14px;padding:8px 10px}
+  .d0g{display:grid;grid-template-columns:minmax(0,1.55fr) minmax(0,1fr);gap:14px;align-items:start}.d0g .d0s{display:flex;flex-direction:column;gap:8px}
+  .d0c{background:#fff;border:2px solid #d5d9e3;border-radius:14px;padding:4px 10px}
+  .d0s2{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:12px;margin-bottom:6px}.d0s2 .d0c h3{font-size:16.5px;margin:0}.d0s2 .d0c{padding:2px 8px}
+  .d0t{font-size:14px!important;line-height:1.25!important;border-spacing:0 3px!important}.d0t td{padding:2px 8px!important}
   .d0c h3{margin:0 0 2px;font-size:19px;text-align:center}
   .d0c .sub{font-size:14px;text-align:center;color:#555;margin-bottom:2px}
   .d0c.w{border-color:#2563eb}.d0c.w h3{color:#1d4ed8}
@@ -1982,9 +2166,9 @@ slide({
     const hw = h('div'), hf = h('div');
     const cw = h('div.d0c.w', h('h3', 'מעובדים (שיעורים 3 ו-4)'), hw);
     const cf = h('div.d0c.f', h('h3', 'מגורמי ייצור (משק ״נגב״)'), hf);
-    root.appendChild(h('div.d0g', T, h('div.d0s', cw, cf)));
-    const chW = PPC.chart(hw, { w: 380, h: 185, xmax: 12, ymax: 8.6, xLabel: 'x', yLabel: 'y', ticksX: [], ticksY: [], grid: false, showTicks: false });
-    const chF = PPC.chart(hf, { w: 380, h: 185, xmax: 34, ymax: 44, xLabel: 'x', yLabel: 'y', ticksX: [], ticksY: [], grid: false, showTicks: false });
+    root.appendChild(h('div.d0s2', cw, cf)); root.appendChild(T);
+    const chW = PPC.chart(hw, { w: 640, h: 168, xmax: 12, ymax: 8.6, xLabel: 'x', yLabel: 'y', ticksX: [], ticksY: [], grid: false, showTicks: false });
+    const chF = PPC.chart(hf, { w: 640, h: 168, xmax: 34, ymax: 44, xLabel: 'x', yLabel: 'y', ticksX: [], ticksY: [], grid: false, showTicks: false });
     function draw(k, anim) {
       [chW, chF].forEach(c => ['curve', 'pts', 'ann'].forEach(z => c.clear(z)));
       trs.forEach((tr, i) => tr.classList.toggle('now', k === i + 1));
@@ -2083,7 +2267,18 @@ function stageSlide(o) {
       const host = h('div');
       const right = h('div.stack.l2-tight', host, exp);
       (o.after || []).forEach(a => right.appendChild(rv(a[0], a[1])));
-      if (o.wb) { root.appendChild(h('div.wb.wb3', h('div.stack.l2-tight', left.children[0], T.el), h('div.stack.l2-tight', tbl, exp), right)); }
+      let bigQ = null, bigT = null, bigU = false;
+      if (o.wb === 'big') {
+        host.className = 'chbox5';
+        if (ctx.static) root.appendChild(h('div.m5v', h('div.stack.l2-tight', left.children[0], tbl), h('div.stack.l2-tight', host, exp)));
+        else {
+          bigQ = h('details.card.l3-q.qf5', { open: '' }, h('summary', h('span.l3-src', o.src || 'שאלה'), h('span.qf5s', '')), h('div.qf5b', { html: o.q }));
+          bigT = h('details.tf5', { open: '' }, h('summary', 'נסו לבד, ואז המשיכו בלחיצות'), T.el);
+          [bigQ, bigT].forEach(d => d.querySelector('summary').addEventListener('click', () => { bigU = true; }));
+          root.appendChild(h('div.m5v', h('div.stack.l2-tight', bigQ, bigT, tbl), h('div.stack.l2-tight', host, exp)));
+        }
+      }
+      else if (o.wb) { root.appendChild(h('div.wb.wb3', h('div.stack.l2-tight', left.children[0], T.el), h('div.stack.l2-tight', tbl, exp), right)); }
       else root.appendChild(h('div.cols', left, right));
       const ch = o.chart(host);
       let K = 0, sel = null;
@@ -2097,7 +2292,7 @@ function stageSlide(o) {
         exp.innerHTML = o.say(k);
       }
       cells.forEach(([td, c]) => { if (typeof c !== 'string') td.addEventListener('click', () => { if (K < c.s) return; sel = sel === c.s ? null : c.s; paint(); }); });
-      const draw = k => { K = k; sel = null; paint(); };
+      const draw = k => { K = k; sel = null; paint(); if (bigQ && !bigU) { bigQ.open = k === 0; bigT.open = k === 0; } };
       draw(ctx.static ? o.n : 0); ctx.onStep(k => draw(k));
     }
   });
@@ -2251,12 +2446,15 @@ function conDraw(ch, E, s) {
       ch.curve([[0, f.Y], [f.X, 0]], { cls: 'cl' + (i + 1) + (s.dim ? ' dim' : ''), animate: s.anim === 'l' + (i + 1), dur: 1 });
       const lp = f.lab || [f.X * 0.16, f.Y * 0.84];
       if (!s.dim) ch.text(lp[0] + ch.xmax * 0.02, lp[1] + ch.ymax * 0.02, f.ln || 'קו ה' + f.name, 'lbl' + (i + 1), 'start');
+      if (typeof hoverEq === 'function') hoverEq(ch, [0, f.Y], [f.X, 0], f.ln || 'קו ה' + f.name, 'כל הצירופים שמנצלים את כל ה' + f.name + '.');
     }
     const only = s.only === undefined || s.only === i;
     if (v === 1 || (v >= 2 && !s.dim && only) || s.ends) {
-      ctick(ch, 'x', f.X, 'lbl' + (i + 1)); ctick(ch, 'y', f.Y, 'lbl' + (i + 1));
-      ch.dot(f.X, 0, { cls: c, r: 6, pop: s.anim === 'e' + (i + 1) + 'x' }); ch.dot(0, f.Y, { cls: c, r: 6, pop: s.anim === 'e' + (i + 1) + 'y' });
+      if (f.X <= ch.xmax) { ctick(ch, 'x', f.X, 'lbl' + (i + 1)); ch.dot(f.X, 0, { cls: c, r: 6, pop: s.anim === 'e' + (i + 1) + 'x' }); }
+      if (f.Y <= ch.ymax) { ctick(ch, 'y', f.Y, 'lbl' + (i + 1)); ch.dot(0, f.Y, { cls: c, r: 6, pop: s.anim === 'e' + (i + 1) + 'y' }); }
     }
+    if (v >= 2 && f.Y > ch.ymax) ch.text((f.Y - ch.ymax) * f.X / f.Y + ch.xmax * 0.015, ch.ymax * 0.965, '↑ עד ' + fmt(f.Y), 'cut5 lbl' + (i + 1), 'start');
+    if (v >= 2 && f.X > ch.xmax) ch.text(ch.xmax * 0.995, f.Y - f.Y / f.X * ch.xmax + ch.ymax * 0.03, 'עד ' + fmt(f.X) + ' →', 'cut5 lbl' + (i + 1), 'end');
   });
   if (s.e1x) { ctick(ch, 'x', E.F[0].X, 'lbl1'); ch.dot(E.F[0].X, 0, { cls: 'c1', r: 6, pop: s.anim === 'e1x' }); }
   if (s.e1y) { ctick(ch, 'y', E.F[0].Y, 'lbl1'); ch.dot(0, E.F[0].Y, { cls: 'c1', r: 6, pop: s.anim === 'e1y' }); }
@@ -2266,7 +2464,9 @@ function conDraw(ch, E, s) {
   if (s.p2) ch.curve([E.P[1], E.P[2]], { cls: 'ppcg', animate: s.anim === 'p2', dur: 0.9 });
   if (s.p1 && s.dim) { ctick(ch, 'y', E.P[0][1]); ch.dot(E.P[0][0], E.P[0][1], { cls: 'gold', r: 7, label: 'A' }); }
   if (s.p2 && s.dim) { ctick(ch, 'x', E.P[2][0]); ch.dot(E.P[2][0], E.P[2][1], { cls: 'gold', r: 7, label: 'C' }); }
-  if (s.ix) ch.dot(E.ix, E.iy, { cls: 'gold', r: 8, label: (s.ixl || 'B') + ' (' + fmt(E.ix) + ', ' + fmt(E.iy) + ')', pop: s.anim === 'ix' });
+  if (s.ix) { if (typeof crossMark === 'function') crossMark(ch, E.ix, E.iy); ch.dot(E.ix, E.iy, { cls: 'gold', r: 8, label: (s.ixl || 'B') + ' (' + fmt(E.ix) + ', ' + fmt(E.iy) + ')', pop: s.anim === 'ix' }); }
+  if (typeof setCurve === 'function') setCurve(ch, s.p1 && s.p2 ? E.P : null);
+  if (typeof curveHover === 'function' && s.p1 && s.p2) curveHover(ch, E.P, [E.F[E.lo].name, E.F[E.hi].name]);
   if (s.onSeg && s.p1 && s.p2) [0, 1].forEach(i => {
     const a = E.P[i], b = E.P[i + 1];
     const hit = PPC.el('path', { class: 'segc', d: `M${ch.sx(a[0])},${ch.sy(a[1])} L${ch.sx(b[0])},${ch.sy(b[1])}` }, ch.layer('ann'));
@@ -2443,7 +2643,7 @@ slide({
 
 /* ----- the meeting point of the two lines, and the curve ----- */
 stageSlide({
-  id: 'g3', kick: 'נושא חדש: מגבלות של גורמי ייצור', title: 'משק ״נגב״: איפה הקווים נפגשים, ומהי עקומת התמורה', tags: { ex: ['5.3'] }, n: 12, wb: true,
+  id: 'g3', kick: 'נושא חדש: מגבלות של גורמי ייצור', title: 'משק ״נגב״: איפה הקווים נפגשים, ומהי עקומת התמורה', tags: { ex: ['5.3'] }, n: 12, wb: 'big',
   src: 'משק ״נגב״, ממשיכים', q: 'קו הקרקע וקו המים חוצים זה את זה. <b>באיזו נקודה שני גורמי הייצור מנוצלים עד הסוף? ומהי עקומת התמורה של המשק?</b>',
   hints: ['כותבים משוואה לכל קו: ' + m('y = Ymax − ' + F('Ymax', 'Xmax') + ' × x') + '.', 'בנקודת המפגש לשני הקווים אותו y. משווים בין שתי המשוואות.', 'מציבים את ה-x שמצאתם באחת המשוואות.'],
   fields: [['x', m('x'), 15], ['y', m('y'), 10]],
@@ -2457,7 +2657,7 @@ stageSlide({
     ['<b>y במפגש</b>', { v: m('y = 40 − 2 × 15'), s: 7 }, { v: m('y = 10'), s: 7 }],
     ['<b>בדיקה</b><br>בקו הקרקע', { v: m('20 − ' + F('2', '3') + ' × 15'), s: 8 }, { v: m('10 ✓'), s: 8 }]],
   after: [[L2.card('ok', 'עקומת התמורה עם שני גורמי ייצור', 'בכל x, המשק מוגבל על ידי הגורם שנגמר ראשון. לכן העקומה היא <b>הקו הנמוך מבין השניים</b>: קו הקרקע עד נקודת המפגש, וקו המים אחריה. הנקודות: ' + 'A ' + m('(0, 20)') + ', אחריה B ' + m('(15, 10)') + ', ובסוף C ' + m('(20, 0)') + '.'), 11]],
-  chart: host => PPC.chart(host, { w: 470, h: 340, xmax: 35, ymax: 45, xLabel: 'עגבניות (x)', yLabel: 'חיטה (y)', ticksX: [], ticksY: [], grid: false, showTicks: false }),
+  chart: host => PPC.chart(host, { w: 640, h: 380, xmax: 35, ymax: 45, xLabel: 'עגבניות (x)', yLabel: 'חיטה (y)', ticksX: [], ticksY: [], grid: false, showTicks: false }),
   say(k) {
     return ['<b class="t">לפני שמתחילים</b>שני קווי המגבלה מהשקף הקודם. הם נפגשים בנקודה אחת. נמצא אותה בחישוב.',
       '<b class="t">שלב 1: משוואה של קו מגבלה</b>הקו מתחיל ב-' + m('Ymax') + ' ויורד בקצב קבוע. הקצב הוא השיפוע: ' + m(F('Ymax', 'Xmax')) + '. לכן ' + m('y = Ymax − ' + F('Ymax', 'Xmax') + ' × x') + '.',
@@ -2505,7 +2705,7 @@ slide({
 });
 
 /* ===== exam style question on two production factors: the solution table built from zero (the notebook's exercise 1, part א) ===== */
-const SK = conEco({ F: [{ name: 'אלומיניום', q: 200, ax: 2, ay: 2, lab: [70, 22] }, { name: 'לאפות', q: 150, ax: 2, ay: 1, lab: [6, 128] }] });
+const SK = conEco({ F: [{ name: 'אלומיניום', q: 200, ax: 2, ay: 2, lab: [70, 24] }, { name: 'לאפות', q: 150, ax: 2, ay: 1, lab: [44, 64] }] });
 slide({
   id: 'g5', kick: 'שאלה בסגנון מבחן', kc: 'p', title: 'משק ״שייקה״: בונים את טבלת הפתרון מאפס', steps: 22, tags: { ex: ['5.3'] },
   build(root, ctx) {
@@ -2513,7 +2713,7 @@ slide({
     const ST = [['מסדרים את הנתונים', 1, 1, 'שלב 1: נתונים'], ['Xmax לכל גורם', 2, 3, 'שלב 2: Xmax'], ['Ymax לכל גורם', 4, 5, 'שלב 2: Ymax'], ['שיפוע ומשוואה', 6, 9, 'שלב 3: שיפוע ומשוואה'], ['נקודת המפגש', 10, 12, 'שלב 5: נקודת המפגש'], ['נקודות העקומה', 13, 15, 'שלבים 4 ו-6: נקודות העקומה'], ['שרטוט', 16, 22, 'שלב 6: שרטוט']];
     const strip = h('div.stg');
     const sb = ST.map((s, i) => { const b = h('button', { type: 'button' }, s[3] || ((i + 1) + '. ' + s[0])); b.addEventListener('click', () => jumpStep(s[2])); strip.appendChild(b); return b; });
-    const q = h('div.card.l3-q.wbq', h('div.l3-src', 'שאלה בסגנון מבחן'),
+    const q = h('details.card.l3-q.qf5', { open: '' }, h('summary', h('span.l3-src', 'שאלה בסגנון מבחן'), h('span.qf5s', '')),
       h('div', { html: 'במשק ״שייקה״ מייצרים שני מוצרים: אייפונים (x) ומקבוקים (y). הייצור מתבסס על שני גורמי ייצור: אלומיניום ולאפות.' }),
       h('div', { style: 'margin-top:5px', html: 'לייצור אייפון אחד דרושות 2 יחידות אלומיניום ו-2 לאפות.' }),
       h('div', { style: 'margin-top:5px', html: 'לייצור מקבוק אחד דרושות 2 יחידות אלומיניום ולאפה אחת.' }),
@@ -2533,10 +2733,11 @@ slide({
     const exp = h('div.wbx');
     const mid = h('div', T, h('div.wbh', 'נקודת המפגש של שני הקווים'), T2, h('div.wbh', 'נקודות העקומה'), T3);
     const host = h('div');
-    const right = h('div', host, h('div.wbh', 'איך חושב? לחצו על תא או על קטע'), exp);
+    host.className = 'chbox5';
+    let qUser = false; q.querySelector('summary').addEventListener('click', () => { qUser = true; });
     root.appendChild(strip);
-    root.appendChild(h('div.wb.wb2', q, mid, right));
-    const ch = PPC.chart(host, { w: 470, h: 350, xmax: 116, ymax: 168, xLabel: 'אייפונים (x)', yLabel: 'מקבוקים (y)', ticksX: [], ticksY: [], grid: false, showTicks: false });
+    root.appendChild(h('div.m5v', h('div.stack.l2-tight', q, mid), h('div.stack.l2-tight', host, exp)));
+    const ch = PPC.chart(host, { w: 640, h: 344, xmax: 108, ymax: 112, xLabel: 'אייפונים (x)', yLabel: 'מקבוקים (y)', ticksX: [], ticksY: [], grid: false, showTicks: false });
     const D = {};
     const put = (key, from, html, ex, src) => { D[key] = { from, html, ex, src: src || [] }; };
     E.F.forEach((f, i) => {
@@ -2585,6 +2786,7 @@ slide({
     Object.keys(C).forEach(key => C[key].addEventListener('click', () => { const d = D[key]; if (!d || !d.ex || K < d.from) return; picked = key; paint(); exp.innerHTML = d.ex; }));
     function draw(k, anim) {
       K = k; picked = null; paint();
+      if (!ctx.static && !qUser) q.open = k <= 1;
       ST.forEach((s, i) => { sb[i].className = k >= s[1] && k <= s[2] ? 'on' : k > s[2] ? 'done' : ''; });
       conDraw(ch, E, { l1: k >= 17 ? 2 : k >= 16 ? 1 : 0, l2: k >= 19 ? 2 : k >= 18 ? 1 : 0, ix: k >= 20, p1: k >= 21, p2: k >= 22, dim: k >= 22, onSeg: segSay,
         anim: anim ? ({ 16: 'e1x', 17: 'l1', 18: 'e2x', 19: 'l2', 20: 'ix', 21: 'p1', 22: 'p2' })[k] || '' : '' });
@@ -2704,6 +2906,8 @@ slide({
 (function () {
   const st = document.createElement('style');
   st.textContent = `
+  .k5g .l5t td{height:34px;padding:4px 7px}
+  .k5g .l2-qc{padding:7px 12px}.k5g .l2-qc .qt{font-size:16px;margin-bottom:4px}.k5g .l2-qc .ops .btn{padding:4px 12px}.k5g .wbx{padding:5px 11px;font-size:14.5px;line-height:1.4;min-height:0}
   .k5g{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,1fr);gap:14px;align-items:start}
   .k5g .l5t td{height:33px;padding:3px 6px}.k5g .l5t th{padding:4px 6px}
   .k5g .l5t td.who{font-weight:800}
@@ -2719,10 +2923,12 @@ const kUse = (f, x, y) => f.ax * x + f.ay * y;
 /* the two constraint lines and the curve of כרמל, drawn plainly */
 function kBase(ch, o = {}) {
   ch.curve([[0, 60], [40, 0]], { cls: 'cl1' + (o.dim ? ' dim' : '') }); ch.curve([[0, 40], [80, 0]], { cls: 'cl2' + (o.dim ? ' dim' : '') });
-  ch.text(4, 57, 'קו הפלדה', 'lbl1', 'start'); ch.text(58, 13, 'קו שעות העבודה', 'lbl2', 'start');
+  ch.text(5, 55, 'קו הפלדה', 'lbl1', 'start'); ch.text(33, 26.5, 'קו שעות העבודה', 'lbl2', 'start'); ch.text(49.6, 21.5, 'עד 80 →', 'cut5 lbl2', 'end');
+  hoverEq(ch, [0, 60], [40, 0], 'קו הפלדה', 'כל הצירופים שמנצלים את כל 120 ק״ג הפלדה. שיפוע 1.5.'); hoverEq(ch, [0, 40], [80, 0], 'קו שעות העבודה', 'כל הצירופים שמנצלים את כל 80 השעות. שיפוע 0.5.');
+  setCurve(ch, [[0, 40], [20, 30], [40, 0]]); curveHover(ch, [[0, 40], [20, 30], [40, 0]], ['שעות העבודה', 'הפלדה']);
   if (o.seg) { ch.curve([[0, 40], [20, 30]], { cls: 'ppcg seg2' }); ch.curve([[20, 30], [40, 0]], { cls: 'ppcg seg1' }); }
   else ch.curve([[0, 40], [20, 30], [40, 0]], { cls: 'ppcg' });
-  [40, 60].forEach(v => ctick(ch, 'y', v)); [20, 40, 80].forEach(v => ctick(ch, 'x', v));
+  [40, 60].forEach(v => ctick(ch, 'y', v)); [20, 40].forEach(v => ctick(ch, 'x', v));
 }
 const kStory = 'מפעל ״כרמל״ מייצר אופניים (x) וקורקינטים (y). לרשותו ' + m('120') + ' ק״ג פלדה ו-' + m('80') + ' שעות עבודה. אופניים: ' + m('3') + ' ק״ג פלדה ושעת עבודה אחת. קורקינט: ' + m('2') + ' ק״ג פלדה ו-' + m('2') + ' שעות עבודה. העקומה: ' + m('A (0, 40)') + ', ' + m('B (20, 30)') + ', ' + m('C (40, 0)') + '.';
 
@@ -2754,7 +2960,7 @@ slide({
       { t: 'אין אבטלה מבנית', why: 'רק בנקודת השבר ' + m('(20, 30)') + ' אין עודף. כאן ' + m('y = 36') + ', והנקודה בקטע AB.' }]), 18);
     const host = h('div');
     root.appendChild(h('div.k5g', h('div.stack.l2-tight', q, T, exp), h('div.stack.l2-tight', host, ptKey([[PT_C.gold, 'נקודה על העקומה']]), quiz)));
-    const ch = PPC.chart(host, { w: 560, h: 205, xmax: 86, ymax: 64, xLabel: 'אופניים (x)', yLabel: 'קורקינטים (y)', ticksX: [], ticksY: [], grid: false, showTicks: false });
+    const ch = PPC.chart(host, { w: 560, h: 290, xmax: 50, ymax: 64, xLabel: 'אופניים (x)', yLabel: 'קורקינטים (y)', ticksX: [], ticksY: [], grid: false, showTicks: false });
     const tip = ([n, x, y]) => { const us = kUse(KC.S, x, y), uh = kUse(KC.H, x, y);
       return [n + ' (' + x + ', ' + y + ')' + (n === 'B' ? ': נקודת השבר' : ''), 'פלדה: ' + m('3 × ' + x + ' + 2 × ' + y + ' = ' + us) + ' מתוך 120' + (120 - us ? '. <b>נשארים ' + (120 - us) + ' ק״ג.</b>' : '. הכול בשימוש.') + '<br>שעות: ' + m(x + ' + 2 × ' + y + ' = ' + uh) + ' מתוך 80' + (80 - uh ? '. <b>נשארות ' + (80 - uh) + ' שעות.</b>' : '. הכול בשימוש.')]; };
     const say = [
@@ -2813,8 +3019,8 @@ slide({
       { t: 'לא יעיל, יש עודף משני הגורמים', why: 'השעות אכן מספיקות, אבל הפלדה לא: ' + m('126') + ' ק״ג, ויש רק 120.' },
       { t: 'יעיל, עם עודף של שעות', why: 'על העקומה, ב-' + m('x = 30') + ', מייצרים רק 15 קורקינטים. 18 זה מעל העקומה.' }]), 14);
     const host = h('div');
-    root.appendChild(h('div.k5g', h('div.stack.l2-tight', q, T, exp), h('div.stack.l2-tight', host, ptKey([[PT_C.ok5, 'על העקומה'], [PT_C.in5, 'מתחת לעקומה'], [PT_C.bad5, 'מחוץ לעקומה']]), quiz)));
-    const ch = PPC.chart(host, { w: 560, h: 205, xmax: 86, ymax: 64, xLabel: 'אופניים (x)', yLabel: 'קורקינטים (y)', ticksX: [], ticksY: [], grid: false, showTicks: false });
+    root.appendChild(h('div.k5g', h('div.stack.l2-tight', q, T, exp), h('div.stack.l2-tight', host, ptKey([[PT_C.ok5, 'על העקומה'], [PT_C.in5, 'מתחת לעקומה'], [PT_C.bad5, 'מעל העקומה']]), quiz)));
+    const ch = PPC.chart(host, { w: 560, h: 290, xmax: 50, ymax: 64, xLabel: 'אופניים (x)', yLabel: 'קורקינטים (y)', ticksX: [], ticksY: [], grid: false, showTicks: false });
     const say = ['<b class="t">מה בודקים</b>לכל צירוף שני חישובים: כמה פלדה הוא דורש, וכמה שעות. צירוף אפשרי רק אם שני הגורמים מספיקים.',
       '<b class="t">P (20, 30)</b>פלדה: ' + m('60 + 60 = 120') + '. בדיוק מה שיש.', '<b class="t">P: שעות</b>' + m('20 + 60 = 80') + '. בדיוק. P היא נקודת השבר: יעילה, בלי עודף.',
       '<b class="t">Q (10, 35)</b>פלדה: ' + m('30 + 70 = 100') + '. מספיק, ונשארים 20.', '<b class="t">Q: שעות</b>' + m('10 + 70 = 80') + '. בדיוק. Q על העקומה: יעילה, עם אבטלה מבנית של פלדה.',
@@ -2841,7 +3047,7 @@ slide({
 
 /* ---------- k3: marginal cost along the curve of כרמל ---------- */
 slide({
-  id: 'k3', kick: 'ממשיכים במפעל ״כרמל״', kc: 'p', title: 'מפעל ״כרמל״: כמה עולים עוד אופניים, ועוד קורקינט?', steps: 13, tags: { ex: ['5.5'] },
+  id: 'k3', kick: 'ממשיכים במפעל ״כרמל״', kc: 'p', title: 'מפעל ״כרמל״: כמה עולים עוד אופניים, ועוד קורקינט?', steps: 13,
   build(root, ctx) {
     const q = qcard('אותו מפעל, עלויות', 'העקומה של ״כרמל״: ' + m('A (0, 40)') + ', ' + m('B (20, 30)') + ', ' + m('C (40, 0)') + '. אופניים: ' + m('3') + ' ק״ג פלדה ושעה. קורקינט: ' + m('2') + ' ק״ג ו-' + m('2') + ' שעות. <b>מהי העלות השולית בכל קטע? כמה עולה המעבר מ-10 ל-30 אופניים?</b>');
     const T = h('table.l5t');
@@ -2863,8 +3069,8 @@ slide({
       { t: m('0.67'), why: 'זו העלות של הקורקינט ה-30, שעוד יוצר בקטע BC. הקורקינט ה-31 כבר בקטע AB.' },
       { t: m('0.5'), why: 'זו העלות השולית של אופניים בקטע AB, בקורקינטים. כאן שואלים על קורקינט, ההופכי.' }]), 13);
     const host = h('div');
-    root.appendChild(h('div.k5g.k3w', h('div.stack.l2-tight', q, T, quiz), h('div.stack.l2-tight', host, exp, T2)));
-    const ch = PPC.chart(host, { w: 560, h: 205, xmax: 86, ymax: 64, xLabel: 'אופניים (x)', yLabel: 'קורקינטים (y)', ticksX: [], ticksY: [], grid: false, showTicks: false });
+    root.appendChild(h('div.k5g.k3w', h('div.stack.l2-tight', q, T, T2), h('div.stack.l2-tight', host, exp, quiz)));
+    const ch = PPC.chart(host, { w: 560, h: 290, xmax: 50, ymax: 64, xLabel: 'אופניים (x)', yLabel: 'קורקינטים (y)', ticksX: [], ticksY: [], grid: false, showTicks: false });
     const say = ['<b class="t">השאלה</b>העקומה בנויה משני קטעים ישרים. בכל קטע העלות השולית קבועה. נחשב אותה, ונבין למה היא משתנה.',
       '<b class="t">הקטע AB</b>מ-A עד B העקומה הולכת על קו שעות העבודה. השעות מגבילות.',
       '<b class="t">שיפוע AB</b>y יורד מ-40 ל-30 כש-x עולה מ-0 ל-20: ' + m(F('10', '20') + ' = 0.5') + '. אותו שיפוע מתקבל מהדרישות: אופניים דורשים שעה אחת, וקורקינט שעתיים. כל שעה שעוברת לאופניים לוקחת חצי קורקינט.',
@@ -3160,6 +3366,22 @@ slide({
   .m5w .wbt td{height:34px}.m5w .wbh{margin:6px 0 3px}
   .m5w .wbx b.t{display:block}
   .m5rule{background:#ecfdf5;border-right:4px solid #16a34a;border-radius:8px;padding:7px 10px;font-size:15.5px;line-height:1.45;margin-top:8px}
+  .m5v{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.15fr);gap:14px;align-items:start}
+  .m5v .wbt{width:100%}.m5v .wbt td{height:31px;font-size:15.5px;padding:1px 5px}.m5v .wbt th{padding:4px 4px;font-size:13px}
+  .m5v .wbh{margin:5px 0 2px;font-size:14.5px}
+  .m5v .wbx{min-height:58px;font-size:15px;line-height:1.45;padding:6px 11px}.m5v .wbx b.t{display:block}
+  .chbox5{background:#fff;border-radius:14px;box-shadow:0 2px 10px rgba(22,33,58,.08);padding:2px 4px;position:relative}
+  details.qf5{padding:6px 11px;font-size:14.5px;line-height:1.45}
+  details.qf5>summary{cursor:pointer;list-style:none;display:flex;align-items:center;gap:8px;font-weight:700}
+  details.qf5>summary::-webkit-details-marker{display:none}
+  details.qf5>summary .l3-src{margin:0}
+  details.qf5>summary .qf5s::after{content:'▾ לחצו כדי לפתוח את השאלה';font-size:13px;color:var(--mut)}
+  details.qf5[open]>summary .qf5s::after{content:'▴ לחצו כדי לקפל';}
+  details.qf5 .qf5b{margin-top:4px}
+  details.qf5 ol{margin:2px 20px 0 0;padding:0;list-style-type:hebrew}
+  details.tf5{border-radius:10px}
+  details.tf5>summary{cursor:pointer;font-weight:800;font-size:14.5px;margin:5px 0 2px;color:var(--ink2)}
+  details.tf5:not([open])>summary{background:#fff;border:1.5px solid var(--line);border-radius:9px;padding:5px 10px}
   .m4w{display:grid;grid-template-columns:minmax(0,.82fr) minmax(0,1.25fr);gap:14px;align-items:start}
   .m4w .xlhost{min-width:0}
   `;
@@ -3170,16 +3392,23 @@ slide({
 function m5Lines(ch, L, s) {
   ['curve', 'pts', 'ann'].forEach(c => ch.clear(c));
   L.forEach((f, i) => {
+    const inX = f.X <= ch.xmax + 1e-9, inY = f.Y <= ch.ymax + 1e-9;
     if (i < (s.ends || 0)) {
-      ctick(ch, 'x', f.X, 'lbl' + f.cls); ctick(ch, 'y', f.Y, 'lbl' + f.cls);
-      ch.dot(f.X, 0, { cls: 'c' + f.cls, r: 6, pop: s.anim === 'e' + i }); ch.dot(0, f.Y, { cls: 'c' + f.cls, r: 6, pop: s.anim === 'e' + i });
+      if (inX) { ctick(ch, 'x', f.X, 'lbl' + f.cls); ch.dot(f.X, 0, { cls: 'c' + f.cls, r: 6, pop: s.anim === 'e' + i }); }
+      if (inY) { ctick(ch, 'y', f.Y, 'lbl' + f.cls); ch.dot(0, f.Y, { cls: 'c' + f.cls, r: 6, pop: s.anim === 'e' + i }); }
     }
     if (i < (s.lines || 0)) {
       ch.curve([[0, f.Y], [f.X, 0]], { cls: 'cl' + f.cls + (s.dim ? ' dim' : ''), animate: s.anim === 'l' + i, dur: 0.9 });
       if (!s.nolab) ch.text(f.lab[0], f.lab[1], 'קו ה' + f.name, 'lbl' + f.cls, 'start');
+      hoverEq(ch, [0, f.Y], [f.X, 0], 'קו ה' + f.name, 'כל הצירופים שמנצלים את כל ה' + f.name + '. שיפוע ' + fmt(Math.round(f.Y / f.X * 100) / 100) + '.');
+      /* a line that leaves the plot: say where it ends */
+      if (!inY) { const xe = (f.Y - ch.ymax) * f.X / f.Y; ch.text(xe + ch.xmax * 0.015, ch.ymax * 0.965, '↑ עד ' + fmt(f.Y), 'cut5 lbl' + f.cls, 'start'); }
+      if (!inX) { const ye = f.Y - f.Y / f.X * ch.xmax; ch.text(ch.xmax * 0.995, ye + ch.ymax * 0.03, 'עד ' + fmt(f.X) + ' →', 'cut5 lbl' + f.cls, 'end'); }
     }
   });
   if (s.curve && s.curve.length > 1) for (let i = 0; i + 1 < s.curve.length; i++) ch.curve([s.curve[i], s.curve[i + 1]], { cls: 'ppcg', animate: s.anim === 'p' + i, dur: 0.8 });
+  if (s.curve && s.curve.length > 1 && !s.dimCurve) curveHover(ch, s.curve);
+  setCurve(ch, s.curve && s.curve.length > 1 ? s.curve : null);
 }
 const m5r = v => (Math.round(v * 100) / 100).toString();
 
@@ -3192,23 +3421,27 @@ function m5Worked(o) {
       const C = {}, D = o.D;
       const strip = h('div.stg');
       const sb = (o.stages || []).map((s, i) => { const b = h('button', { type: 'button' }, s[3] || ((i + 1) + '. ' + s[0])); b.addEventListener('click', () => jumpStep(s[1])); strip.appendChild(b); return b; });
-      const mid = h('div');
-      const leftCol = h('div.stack.l2-tight', h('div.card.l3-q', h('div.l3-src', o.src || 'שאלה'), h('div', { html: o.q })));
+      /* the question folds into one line once its data is in the table; a click opens it again */
+      const qd = h('details.card.l3-q.qf5', { open: '' }, h('summary', h('span.l3-src', o.src || 'שאלה'), h('span.qf5s', '')), h('div.qf5b', { html: o.q }));
+      let qUser = false; qd.querySelector('summary').addEventListener('click', () => { qUser = true; });
+      const right = h('div.stack.l2-tight', qd);
+      const secs = [];
       o.tables.forEach(t => {
-        const tgt = t.left ? leftCol : mid;
-        if (t.title) tgt.appendChild(h('div.wbh', t.title));
         const T = h('table.wbt'); T.appendChild(h('thead', h('tr', t.head.map(x => h('th', { html: x })))));
-        const tb = h('tbody'); T.appendChild(tb);
-        t.rows.forEach(r => { const tr = h('tr'); r.forEach(c => { const td = h('td'); if (D[c]) C[c] = td; else td.innerHTML = c; tr.appendChild(td); }); tb.appendChild(tr); });
-        tgt.appendChild(T);
+        const tb = h('tbody'); T.appendChild(tb); const keys = [];
+        t.rows.forEach(r => { const tr = h('tr'); r.forEach(c => { const td = h('td'); if (D[c]) { C[c] = td; keys.push(c); } else td.innerHTML = c; tr.appendChild(td); }); tb.appendChild(tr); });
+        let sec;
+        if (o.fold && !ctx.static) { sec = h('details.tf5', { open: '' }, h('summary', { html: t.title || '' }), T); sec.querySelector('summary').addEventListener('click', () => { sec.user = true; }); }
+        else sec = h('div', t.title ? h('div.wbh', { html: t.title }) : null, T);
+        right.appendChild(sec); secs.push({ sec, keys });
       });
+      if (o.after) o.after.forEach(a => right.appendChild(rv(a[0](ctx), a[1])));
       const exp = h('div.wbx');
-      const host = h('div');
-      const right = h('div.stack.l2-tight', host, h('div.wbh', 'איך חושב? לחצו על תא בטבלה או על נקודה בגרף'), exp);
-      if (o.after) o.after.forEach(a => leftCol.appendChild(rv(a[0](ctx), a[1])));
+      const host = h('div.chbox5');
+      const left = h('div.stack.l2-tight', host, exp);
       if (o.stages) root.appendChild(strip);
-      root.appendChild(h('div.m5w' + (o.wcls ? '.' + o.wcls : ''), leftCol, mid, right));
-      const ch = PPC.chart(host, Object.assign({ w: 430, h: 262, ticksX: [], ticksY: [], grid: false, showTicks: false }, o.chart));
+      root.appendChild(h('div.m5v' + (o.wcls ? '.' + o.wcls : ''), right, left));
+      const ch = PPC.chart(host, Object.assign({ ticksX: [], ticksY: [], grid: false, showTicks: false }, o.chart, { w: 640, h: o.chartH || 362 }));
       let K = 0, picked = null;
       function paint() {
         Object.keys(C).forEach(key => {
@@ -3220,6 +3453,12 @@ function m5Worked(o) {
       Object.keys(C).forEach(key => C[key].addEventListener('click', () => { const d = D[key]; if (!d.ex || K < d.s) return; picked = key; paint(); exp.innerHTML = d.ex; }));
       function draw(k, anim) {
         K = k; picked = null; paint();
+        if (!ctx.static && !qUser) qd.open = k <= 1;
+        if (o.fold && !ctx.static) {
+          const act = secs.findIndex(x => x.keys.some(c => D[c].s === k));
+          if (act >= 0) secs.forEach((x, i) => { if (!x.sec.user) x.sec.open = i === act; });
+          else if (k === 0) secs.forEach((x, i) => { if (!x.sec.user) x.sec.open = i === 0; });
+        }
         (o.stages || []).forEach((s, i) => { sb[i].className = k >= s[1] && k <= s[2] ? 'on' : k > s[2] ? 'done' : ''; });
         o.draw(ch, k, anim, host);
         exp.innerHTML = o.say(k) || (() => { const key = Object.keys(D).find(x => D[x].s === k && D[x].ex); return key ? D[key].ex : ''; })();
@@ -3292,7 +3531,7 @@ function m5Worked(o) {
 (function () {
   /* workers: 60 h, x 1, y 2 → X 60, Y 30, s 0.5. water: 120, x 3, y 3 → X 40, Y 40, s 1. land: 70, x 2, y 1 → X 35, Y 70, s 2
      curve (0, 30) → (20, 20) → (30, 10) → (35, 0) */
-  const L = [{ X: 60, Y: 30, cls: 1, lab: [42, 12], name: 'עובדים' }, { X: 40, Y: 40, cls: 2, lab: [3, 41], name: 'מים' }, { X: 35, Y: 70, cls: 3, lab: [4, 64], name: 'קרקע' }];
+  const L = [{ X: 60, Y: 30, cls: 1, lab: [37, 14], name: 'עובדים' }, { X: 40, Y: 40, cls: 2, lab: [2, 43], name: 'מים' }, { X: 35, Y: 70, cls: 3, lab: [14.5, 44], name: 'קרקע' }];
   const P = [[0, 30], [20, 20], [30, 10], [35, 0]];
   const D = {};
   const put = (k, s, v, ex, src) => { D[k] = { s, v, ex, src }; };
@@ -3326,7 +3565,7 @@ function m5Worked(o) {
     14: '<b class="t">העקומה: תמיד הקו הנמוך</b>A עד B על קו העובדים, B עד C על קו המים, C עד D על קו הקרקע. שתי נקודות שבר. לחצו על נקודה להסבר.'
   };
   m5Worked({
-    id: 'm2', kick: 'דוגמה רביעית: שלושה גורמי ייצור', title: 'חוות ״עמק״: שלושה קווים, עקומה אחת', n: 17, src: 'שאלה בסגנון מבחן', tags: { ex: ['5.7'] },
+    id: 'm2', kick: 'דוגמה רביעית: שלושה גורמי ייצור', title: 'חוות ״עמק״: שלושה קווים, עקומה אחת', n: 17, chartH: 352, src: 'שאלה בסגנון מבחן', tags: { ex: ['5.7'] },
     q: 'חוות ״עמק״ מגדלת עגבניות (' + m('x') + ', בטונות) ומלפפונים (' + m('y') + ', בטונות). לרשותה 60 שעות עבודה, 120 מ״ק מים ו-70 דונם קרקע.'
       + '<br>טון עגבניות דורש שעת עבודה אחת, 3 מ״ק מים ו-2 דונם.<br>טון מלפפונים דורש 2 שעות עבודה, 3 מ״ק מים ודונם אחד.'
       + '<div style="margin-top:6px"><b>נדרש:</b></div><ol style="margin:2px 18px 0 0;padding:0"><li>בנו ושרטטו את עקומת התמורה.</li><li>מי מגביל בכל קטע, ומהי העלות השולית של עגבניות בכל קטע?</li></ol>',
@@ -3335,7 +3574,7 @@ function m5Worked(o) {
       { head: ['גורם', 'כמות', 'לטון ' + m('x'), 'לטון ' + m('y'), m('Xmax'), m('Ymax'), 'שיפוע'], rows: [0, 1, 2].map(i => ['n' + i, 'q' + i, 'ax' + i, 'ay' + i, 'X' + i, 'Y' + i, 's' + i]) },
       { title: 'נקודות העקומה', head: ['נקודה', 'איפה', 'מי מנוצל עד הסוף'], rows: [['<b>A</b>', 'pA', 'wA'], ['<b>B</b>', 'pB', 'wB'], ['<b>C</b>', 'pC', 'wC'], ['<b>D</b>', 'pD', 'wD']] },
       { title: 'עלות שולית של טון עגבניות', head: ['AB', 'BC', 'CD'], rows: [['mAB', 'mBC', 'mCD']] }],
-    D, chart: { xmax: 64, ymax: 74, xLabel: 'עגבניות (x)', yLabel: 'מלפפונים (y)' },
+    D, chart: { xmax: 46, ymax: 47, xLabel: 'עגבניות (x)', yLabel: 'מלפפונים (y)' },
     say: k => SAY[k],
     draw(ch, k, anim, host) {
       m5Lines(ch, L, { ends: k >= 4 ? 3 : k >= 3 ? 2 : k >= 2 ? 1 : 0, lines: k >= 13 ? 3 : k >= 12 ? 1 : 0, curve: k >= 14 ? P : [], dim: k >= 14, anim: anim ? ({ 12: 'l0', 13: 'l1', 14: 'p0' })[k] : '' });
@@ -3347,7 +3586,7 @@ function m5Worked(o) {
         ['C (30, 10)', 'ne', 'נקודה C: מים וקרקע', 'מים: ' + m('90 + 30 = 120') + '. קרקע: ' + m('60 + 10 = 70') + '. שניהם מנוצלים. מהעובדים נשארות ' + m('60 − 50 = 10') + ' שעות.'],
         ['D (35, 0)', 'e', 'נקודה D: רק עגבניות', 'הקרקע נגמרת ב-35 טון (' + m('35 × 2 = 70') + '). מים בשימוש: 105 מ״ק, עובדים: 35 שעות.']];
       const on = [k >= 8, k >= 9, k >= 10, k >= 11];
-      P.forEach((p, i) => { if (on[i]) ptTip(ch, host, p[0], p[1], { cls: i === 0 || i === 3 ? 'ok5' : 'gold', label: T[i][0], pos: T[i][1], title: T[i][2], tip: T[i][3] }); });
+      P.forEach((p, i) => { if (on[i]) ptTip(ch, host, p[0], p[1], { cls: i === 0 || i === 3 ? 'ok5' : 'gold', label: T[i][0], pos: T[i][1], title: T[i][2], tip: T[i][3], cross: i === 1 || i === 2 }); });
     }
   });
 })();
@@ -3374,12 +3613,14 @@ slide({
       { t: m('5'), why: 'זו כמות הענבים בנקודה, ' + m('20 − 0.5 × 30 = 5') + '. העלות הכוללת היא מה שוויתרו עליו: ' + m('20 − 5 = 15') + '.' },
       { t: m('2'), why: 'זו העלות השולית של ענבים, ההופכי. כאן שואלים על תמרים.' }]);
     const host = h('div');
+    const rule3 = rv(h('div.m5rule', { html: '<b>הכלל:</b> אם ה-Xmax וגם ה-Ymax של גורם גדולים מאלה של גורם אחר, הקו שלו כולו מעל. הוא אף פעם לא מגביל, ותמיד נשאר ממנו עודף. אם הקווים מקבילים, העקומה ישרה ו-' + m('MC = AC') + ' לאורך כולה.' }), 9);
     const left = h('div.stack.l2-tight', q, T, q2);
     const key3 = h('div.ptkey', [['#7c3aed', 'קו הקרקע'], ['#d97706', 'קו המים'], ['#0891b2', 'קו העבודה'], ['#16a34a', 'עקומת התמורה']].map(([c, t]) => h('span', h('i', { style: 'background:' + c }), t)));
-    const right = h('div.stack.l2-tight', host, key3, exp, rv(h('div.m5rule', { html: '<b>הכלל:</b> אם ה-Xmax וגם ה-Ymax של גורם גדולים מאלה של גורם אחר, הקו שלו כולו מעל. הוא אף פעם לא מגביל, ותמיד נשאר ממנו עודף. אם הקווים מקבילים, העקומה ישרה ו-' + m('MC = AC') + ' לאורך כולה.' }), 9));
-    const mid = h('div.stack.l2-tight', rv(qa, 5), rv(qb, 5));
-    root.appendChild(h('div', { style: 'display:grid;grid-template-columns:minmax(0,.95fr) minmax(0,1.1fr) minmax(0,.95fr);gap:12px;align-items:start' }, left, right, mid));
-    const ch = PPC.chart(host, { w: 450, h: 262, xmax: 64, ymax: 28, xLabel: 'תמרים (x)', yLabel: 'ענבים (y)', ticksX: [], ticksY: [], grid: false, showTicks: false });
+    const right = h('div.stack.l2-tight', host, key3, exp);
+    const mid = h('div.stack.l2-tight', rv(qa, 5), rv(qb, 5), rule3);
+    root.appendChild(h('div', { style: 'display:grid;grid-template-columns:minmax(0,.9fr) minmax(0,1.45fr) minmax(0,.72fr);gap:12px;align-items:start' }, left, right, mid));
+    host.className = 'chbox5';
+    const ch = PPC.chart(host, { w: 560, h: 330, xmax: 64, ymax: 28, xLabel: 'תמרים (x)', yLabel: 'ענבים (y)', ticksX: [], ticksY: [], grid: false, showTicks: false });
     const SAY = ['<b class="t">מתחילים</b>שני גורמי ייצור. נחשב את הקצוות של כל קו.', '<b class="t">קו הקרקע</b>' + m('Xmax = 40') + ', ' + m('Ymax = 20') + '. השיפוע ' + m('20 / 40 = 0.5') + '.',
       '<b class="t">קו המים</b>' + m('Xmax = 50') + ', ' + m('Ymax = 25') + '. השיפוע ' + m('25 / 50 = 0.5') + '. אותו שיפוע: הקווים מקבילים.',
       '<b class="t">הקווים לא נפגשים</b>קו המים כולו מעל קו הקרקע. אין נקודת מפגש ואין נקודת שבר.',
@@ -3465,7 +3706,7 @@ slide({
 
 (function () { const st = document.createElement('style'); st.textContent = '.e1c .wbt td{height:31px!important;font-size:16px!important;padding:2px 5px}.e1c .wbt th{padding:3px 4px}.e1c .wbh{margin:4px 0 2px}.e1c .wbq{font-size:14.5px;line-height:1.42}.e1c .wbx{font-size:14.5px}.e2c .xl-g td,.e2c .xl-g th{height:29px!important;line-height:27px;padding-top:0;padding-bottom:0}.e2c .xl-g td{font-size:15.5px}'; document.head.appendChild(st); })();
 /* ===== lesson 5: an exam-style question solved click by click (e1), and a sibling question in a live sheet (e2) ===== */
-const KN = conEco({ F: [{ name: 'קרקע', q: 120, ax: 4, ay: 2, lab: [31, 34] }, { name: 'מים', q: 60, ax: 1, ay: 2, lab: [40, 13] }] });
+const KN = conEco({ F: [{ name: 'קרקע', q: 120, ax: 4, ay: 2, lab: [12, 39] }, { name: 'מים', q: 60, ax: 1, ay: 2, lab: [33, 17] }] });
 slide({
   id: 'e1', kick: 'דוגמה שנייה, מההתחלה עד הסוף', kc: 'p', title: 'משק ״כנרת״: עקומה, עלות שולית, אבטלה מבנית וצירופים', steps: 17, tags: { ex: ['5.9'] },
   build(root, ctx) {
@@ -3473,7 +3714,7 @@ slide({
     const ST = [['נתונים', 1, 1, 'שלב 1: נתונים'], ['Xmax, Ymax ושיפוע', 2, 4, 'שלבים 2-3: קצוות ושיפוע'], ['נקודות העקומה', 5, 7, 'שלבים 4-5: נקודות העקומה'], ['שרטוט', 8, 10, 'שלב 6: שרטוט'], ['עלות שולית', 11, 13, 'שלב 7: עלות שולית'], ['אבטלה מבנית', 14, 15, 'שלב 9: אבטלה מבנית'], ['צירופים', 16, 17, 'שלב 8: צירופים']];
     const strip = h('div.stg');
     const sb = ST.map((s, i) => { const b = h('button', { type: 'button' }, s[3] || ((i + 1) + '. ' + s[0])); b.addEventListener('click', () => jumpStep(s[2])); strip.appendChild(b); return b; });
-    const q = h('div.card.l3-q.wbq', h('div.l3-src', 'שאלה בסגנון מבחן'),
+    const q = h('details.card.l3-q.qf5', { open: '' }, h('summary', h('span.l3-src', 'שאלה בסגנון מבחן'), h('span.qf5s', '')),
       h('div', { html: 'משק ״כנרת״ מגדל עגבניות (x) ומלפפונים (y), בטונות. לרשות המשק 120 דונם קרקע ו-60 יחידות מים.' }),
       h('div', { style: 'margin-top:4px', html: 'לטון עגבניות דרושים 4 דונם ויחידת מים אחת. לטון מלפפונים דרושים 2 דונם ו-2 יחידות מים.' }),
       h('div', { style: 'margin-top:6px', html: '<b>א.</b> שרטטו את עקומת התמורה.<br><b>ב.</b> מהי העלות השולית של טון העגבניות ה-10? ה-25? ה-20?<br><b>ג.</b> המשק מייצר ביעילות 10 טון עגבניות. איזה גורם באבטלה מבנית, ובאיזה היקף?<br><b>ד.</b> סווגו את הצירופים ' + m('(15, 20)') + ' ו-' + m('(25, 15)') + '.' }));
@@ -3490,12 +3731,16 @@ slide({
     const R3 = [['m1', 'ב, טון 10'], ['m2', 'ב, טון 25'], ['m3', 'ב, טון 20'], ['u1', 'ג, קרקע בשימוש'], ['u2', 'ג, קרקע עודפת'], ['k1', 'ד, ' + m('(15, 20)')], ['k2', 'ד, ' + m('(25, 15)')]];
     R3.forEach(r => { const tr = h('tr', h('td', { html: '<b>' + r[1] + '</b>' })); ['a', 'b'].forEach(k => { const td = h('td'); C[r[0] + k] = td; tr.appendChild(td); }); tb3.appendChild(tr); });
     const exp = h('div.wbx');
-    const mid = h('div', T, h('div.wbh', 'נקודות העקומה'), T2, h('div.wbh', 'סעיפים ב עד ד'), T3);
+    const FS = [['שלבים 1 עד 3: טבלת הנתונים', T, 1, 4], ['שלבים 4 עד 6: נקודות העקומה', T2, 5, 10], ['סעיפים ב עד ד', T3, 11, 17]];
+    const FD = FS.map(f => { if (ctx.static) return h('div', h('div.wbh', f[0]), f[1]); const d = h('details.tf5', { open: '' }, h('summary', f[0]), f[1]); d.querySelector('summary').addEventListener('click', () => { d.user = true; }); return d; });
+    const mid = h('div', FD);
     const host = h('div');
     const right = h('div', host, ptKey([[PT_C.gold, 'נקודה על העקומה'], [PT_C.in5, 'מתחת לעקומה'], [PT_C.bad5, 'מעל העקומה']]));
     root.appendChild(strip);
-    root.appendChild(h('div.wb.wb2.e1c', h('div.stack.l2-tight', q, h('div.wbh', 'איך חושב? לחצו על תא'), exp), mid, right));
-    const ch = PPC.chart(host, { w: 470, h: 400, xmax: 64, ymax: 64, xLabel: 'עגבניות (x)', yLabel: 'מלפפונים (y)', ticksX: [], ticksY: [], grid: false, showTicks: false });
+    let qUser = false; q.querySelector('summary').addEventListener('click', () => { qUser = true; });
+    host.className = 'chbox5';
+    root.appendChild(h('div.m5v.e1c', h('div.stack.l2-tight', q, mid), h('div.stack.l2-tight', host, right.lastChild, exp)));
+    const ch = PPC.chart(host, { w: 640, h: 340, xmax: 44, ymax: 44, xLabel: 'עגבניות (x)', yLabel: 'מלפפונים (y)', ticksX: [], ticksY: [], grid: false, showTicks: false });
     const put = (key, from, html, ex) => { D[key] = { from, html, ex }; };
     E.F.forEach((f, i) => {
       const of = 'ה' + f.name;
@@ -3548,11 +3793,13 @@ slide({
       [25, 15, 'bad5', 'R (25, 15)', 'מעל קו הקרקע: הצירוף דורש 130 דונם, ויש רק 120. בלתי אפשרי.', 17, 'e']];
     function draw(k, anim) {
       K = k; picked = null; paint();
+      if (!ctx.static && !qUser) q.open = k <= 1;
+      if (!ctx.static) FS.forEach((f, i) => { if (!FD[i].user) FD[i].open = k === 0 ? i === 0 : (k >= f[2] && k <= f[3]); });
       host.querySelectorAll('.pttip').forEach(e => e.remove());
       ST.forEach((s, i) => { sb[i].className = k >= s[1] && k <= s[2] ? 'on' : k > s[2] ? 'done' : ''; });
       conDraw(ch, E, { l1: k >= 8 ? 2 : 0, l2: k >= 9 ? 2 : 0, ix: false, p1: k >= 10, p2: k >= 10, dim: false, anim: anim ? ({ 8: 'l1', 9: 'l2', 10: 'p1' })[k] || '' : '' });
       if (k >= 11 && k <= 13) { const x = [10, 25, 20][k - 11]; ch.line(x, 0, x, E.F[0].Y - E.F[0].s * x < E.F[1].Y - E.F[1].s * x ? E.F[0].Y - E.F[0].s * x : E.F[1].Y - E.F[1].s * x, 'guide x'); }
-      TIPS.forEach(t => { if (k >= t[5]) ptTip(ch, host, t[0], t[1], { cls: t[2], label: t[3], tip: t[4], pos: t[6], pop: anim && k === t[5] }); });
+      TIPS.forEach(t => { if (k >= t[5]) ptTip(ch, host, t[0], t[1], { cls: t[2], label: t[3], tip: t[4], pos: t[6], pop: anim && k === t[5], cross: t[3][0] === 'B' }); });
       exp.innerHTML = say(k);
     }
     draw(ctx.static ? 17 : 0, false);
@@ -3684,6 +3931,7 @@ slide({
   .p5t td{background:#fff;padding:4px 8px;vertical-align:top;border-top:1.5px solid var(--line);border-bottom:1.5px solid var(--line);transition:border-color .3s,background .3s}
   .p5t td:first-child{border-right:1.5px solid var(--line);border-radius:0 10px 10px 0}
   .p5t td:last-child{border-left:1.5px solid var(--line);border-radius:10px 0 0 10px}
+  .p5t.tight{font-size:13.8px;line-height:1.28}.p5t.tight td.ex{font-size:13.3px}.p5t.tight td{padding:3px 7px}
   .p5t.big{font-size:16px;line-height:1.4}.p5t.big td.ex{font-size:15.5px}.p5t.big td{padding:7px 10px}
   .p5t td.n{font-weight:800;font-size:15.5px;line-height:1.3}
   .p5t td.n .num{display:inline-flex;align-items:center;justify-content:center;min-width:26px;height:26px;padding:0 5px;border-radius:13px;background:var(--ink);color:#fff;font-size:14px;margin-left:6px;vertical-align:middle}
@@ -3700,7 +3948,7 @@ slide({
   .p5t td .in.pop{animation:prin .5s ease both}
   .p5t tr.part td{background:transparent!important;border:none!important;padding:2px 4px 0;font-weight:800;color:var(--mc);font-size:15px}
   .p5t .sm{font-size:13.5px;color:var(--mut);display:block;margin-top:2px}
-  .pr2c{display:grid;grid-template-columns:minmax(0,1.62fr) minmax(0,.92fr);gap:14px;align-items:start}
+  .pr2c{display:grid;grid-template-columns:minmax(0,1.42fr) minmax(0,1fr);gap:14px;align-items:start}
   .tree5{display:grid;grid-template-columns:minmax(0,1fr) 56px minmax(0,1fr);align-items:center}
   .tn{border:2.5px solid var(--line);background:#fff;border-radius:12px;padding:7px 10px;font-size:14.5px;line-height:1.38;transition:box-shadow .3s,transform .3s,border-color .3s}
   .tn.q{border-color:var(--ink);background:#f6f7fb;font-weight:700}
@@ -3755,7 +4003,7 @@ function procSlide(o) {
     id: o.id, kick: o.kick, kc: o.kc || 't', title: o.title, steps: rows.length * 2, tags: o.tags,
     build(root, ctx) {
       if (o.lead) root.appendChild(h('p.prlead', { html: o.lead }));
-      const T = h('table.p5t' + (o.big ? '.big' : ''));
+      const T = h('table.p5t' + (o.big ? '.big' : '') + (o.tight ? '.tight' : ''));
       if (o.widths) T.appendChild(h('colgroup', o.widths.map(w => h('col', { style: 'width:' + w }))));
       T.appendChild(h('thead', h('tr', [h('th', 'שלב')].concat(o.head.map(x => h('th', { html: x }))))));
       const tb = h('tbody'); T.appendChild(tb);
@@ -3857,7 +4105,7 @@ procSlide({
 
 /* ---------- sp3: steps 8 and 9 as a decision tree, five new Carmel combinations ---------- */
 slide({
-  id: 'sp3', kick: 'סדר הפעולות, חלק ב', kc: 'p', title: 'שלבים 8 ו-9 כעץ החלטות: חמישה צירופים חדשים במפעל ״כרמל״', steps: 10, tags: { ex: ['5.4', '5.6'] },
+  id: 'sp3', kick: 'סדר הפעולות, חלק ב', kc: 'p', title: 'שלבים 8 ו-9 כעץ החלטות: חמישה צירופים חדשים במפעל ״כרמל״', steps: 10,
   build(root, ctx) {
     const PS = [
       { x: 14, y: 33, st: 108, hr: 80, r: 'ok', v: 'יעיל', d: 'השעות מנוצלות עד הסוף, והן מגבילות. מהפלדה נשארים ' + m('120 − 108 = 12') + ' ק״ג: אבטלה מבנית בפלדה.' },
@@ -3882,8 +4130,8 @@ slide({
     const RW = PS.map(p => { const c = [h('td', { html: m('(' + p.x + ', ' + p.y + ')') }), h('td'), h('td'), h('td.vk')]; const tr = h('tr', c); tb.appendChild(tr); return { tr, c }; });
     const exp = h('div.wbx', { style: 'min-height:66px' });
     const host = h('div');
-    root.appendChild(h('div.sp3g', h('div.stack.l2-tight', tree, exp), h('div.stack.l2-tight', T, h('div', { style: 'max-width:400px;margin:0 auto;width:100%' }, host), ptKey([[PT_C.ok5, 'יעיל'], [PT_C.in5, 'לא יעיל'], [PT_C.bad5, 'בלתי אפשרי']]))));
-    const ch = PPC.chart(host, { w: 440, h: 218, xmax: 44, ymax: 64, xLabel: 'אופניים (x)', yLabel: 'קורקינטים (y)', ticksX: [], ticksY: [], grid: false, showTicks: false });
+    root.appendChild(h('div.sp3g', h('div.stack.l2-tight', tree, exp), h('div.stack.l2-tight', T, h('div.chbox5', host), ptKey([[PT_C.ok5, 'יעיל'], [PT_C.in5, 'לא יעיל'], [PT_C.bad5, 'בלתי אפשרי']]))));
+    const ch = PPC.chart(host, { w: 600, h: 268, xmax: 44, ymax: 64, xLabel: 'אופניים (x)', yLabel: 'קורקינטים (y)', ticksX: [], ticksY: [], grid: false, showTicks: false });
     const L = [{ X: 40, Y: 60, cls: 1, lab: [27, 24], name: 'פלדה' }, { X: 80, Y: 40, cls: 2, lab: [0, 0], name: 'שעות' }];
     const PATH = { ok: ['s', 'a0', 'q1', 'n1', 'q2', 'y2', 'ro'], in: ['s', 'a0', 'q1', 'n1', 'q2', 'n2', 'ri'], bad: ['s', 'a0', 'q1', 'y1', 'rb'] };
     const cmp = (u, q) => m(u + (u > q ? ' > ' : u === q ? ' = ' : ' < ') + q);
@@ -3892,6 +4140,7 @@ slide({
       ch.clear('curve'); ch.clear('pts'); ch.clear('ann');
       ch.curve([[0, 60], [40, 0]], { cls: 'cl1 dim' }); ch.curve([[0, 40], [44, 18]], { cls: 'cl2 dim' });
       ch.curve([[0, 40], [20, 30]], { cls: 'ppcg' }); ch.curve([[20, 30], [40, 0]], { cls: 'ppcg' });
+      setCurve(ch, [[0, 40], [20, 30], [40, 0]]); curveHover(ch, [[0, 40], [20, 30], [40, 0]], ['השעות', 'הפלדה']); hoverEq(ch, [0, 60], [40, 0], 'קו הפלדה', 'שיפוע 1.5'); hoverEq(ch, [0, 40], [80, 0], 'קו השעות', 'שיפוע 0.5');
       ch.text(7, 55, 'קו הפלדה', 'lbl1', 'start'); ch.text(34, 26, 'קו השעות', 'lbl2', 'start');
       [[0, 40], [20, 30], [40, 0]].forEach(([x, y], i) => ch.dot(x, y, { cls: 'gold', r: 5, label: 'ABC'[i], pos: i === 2 ? 'n' : i === 0 ? 'n' : 'ne' }));
       PS.forEach((p, i) => {
@@ -3915,7 +4164,7 @@ slide({
 
 /* ---------- sp4: three factors. What changes in the procedure (on חוות ״עמק״: workers 60: 1, 2; water 120: 3, 3; land 70: 2, 1) ---------- */
 procSlide({
-  id: 'sp4', kick: 'סדר הפעולות: שלושה גורמים', kc: 't', title: 'שלושה גורמי ייצור: אותו סדר פעולות, ומה מוסיפים',
+  tight: true, id: 'sp4', kick: 'סדר הפעולות: שלושה גורמים', kc: 't', title: 'שלושה גורמי ייצור: אותו סדר פעולות, ומה מוסיפים',
   lead: 'הסדר לא משתנה. מוסיפים שני דברים: בשלב 4 מוחקים קו שכולו מעל קו אחר, ובשלב 5 בודקים כל מפגש בגורם השלישי. הדוגמה: חוות ״עמק״.',
   head: ['מה עושים עם שלושה גורמים', 'למה', 'בחוות ״עמק״'], cls: ['w', 'why', 'ex'], first: [0, 2],
   widths: ['14%', '34%', '23%', '29%'],
@@ -3943,18 +4192,18 @@ procSlide({
   side: ctx => { const host = h('div'); const box = h('div.stack.l2-tight', host, h('div.ptkey', [['#7c3aed', 'עובדים'], ['#d97706', 'מים'], ['#0891b2', 'קרקע'], ['#16a34a', 'העקומה'], [PT_C.bad5, 'מפגש שנמחק']].map(([c, t]) => h('span', h('i', { style: 'background:' + c }), t))), h('div.clickhint', '👆 לחצו על נקודה בגרף לקבלת הסבר')); box.__host = host; return box; },
   onK: function (k, anim, box) {
     const host = box.__host;
-    if (!host.__ch) host.__ch = PPC.chart(host, { w: 400, h: 300, xmax: 64, ymax: 74, xLabel: 'עגבניות (x)', yLabel: 'מלפפונים (y)', ticksX: [], ticksY: [], grid: false, showTicks: false });
+    if (!host.__ch) host.__ch = PPC.chart(host, { w: 520, h: 440, xmax: 46, ymax: 47, xLabel: 'עגבניות (x)', yLabel: 'מלפפונים (y)', ticksX: [], ticksY: [], grid: false, showTicks: false });
     const ch = host.__ch; host.querySelectorAll('.pttip').forEach(e => e.remove());
-    const L = [{ X: 60, Y: 30, cls: 1, lab: [44, 11], name: 'עובדים' }, { X: 40, Y: 40, cls: 2, lab: [2, 44], name: 'מים' }, { X: 35, Y: 70, cls: 3, lab: [4, 66], name: 'קרקע' }];
+    const L = [{ X: 60, Y: 30, cls: 1, lab: [37, 14], name: 'עובדים' }, { X: 40, Y: 40, cls: 2, lab: [2, 43], name: 'מים' }, { X: 35, Y: 70, cls: 3, lab: [14.5, 44], name: 'קרקע' }];
     m5Lines(ch, L, { ends: k >= 1 ? 3 : 0, lines: k >= 1 ? 3 : 0, curve: k >= 7 ? [[0, 30], [20, 20], [30, 10], [35, 0]] : [], dim: k >= 7, anim: anim ? ({ 1: 'l0', 7: 'p0' })[k] : '' });
     if (k >= 3) {
       ptTip(ch, host, 0, 30, { cls: 'ok5', label: 'A', pos: 'e', title: 'A (0, 30)', tip: 'ה-Ymax הנמוך: העובדים מספיקים ל-30 טון מלפפונים, המים ל-40 והקרקע ל-70.', pop: anim && k === 3 });
       ptTip(ch, host, 35, 0, { cls: 'ok5', label: 'D', pos: 'n', title: 'D (35, 0)', tip: 'ה-Xmax הנמוך: הקרקע מספיקה ל-35 טון עגבניות, המים ל-40 והעובדים ל-60.', pop: anim && k === 3 });
     }
     if (k >= 5) {
-      ptTip(ch, host, 20, 20, { cls: 'gold', label: 'B', pos: 'nw', title: 'עובדים ומים: (20, 20)', tip: 'בדיקה בקרקע: ' + m('2 × 20 + 20 = 60') + ', ויש 70. הקרקע מספיקה: זו נקודת שבר.', pop: anim && k === 5 });
-      ptTip(ch, host, 30, 10, { cls: 'gold', label: 'C', pos: 'se', title: 'מים וקרקע: (30, 10)', tip: 'בדיקה בעובדים: ' + m('30 + 2 × 10 = 50') + ', ויש 60. העובדים מספיקים: זו נקודת שבר.', pop: anim && k === 5 });
-      ptTip(ch, host, 80 / 3, 50 / 3, { cls: 'bad5', label: '✗ נמחק', pos: 'e', title: 'עובדים וקרקע: (26.7, 16.7)', tip: 'בדיקה במים: ' + m('3 × 26.7 + 3 × 16.7 ≈ 130') + ', ויש רק 120. המים נגמרו קודם: הנקודה מעל העקומה, ומוחקים אותה.', pop: anim && k === 5 });
+      ptTip(ch, host, 20, 20, { cross: true, cls: 'gold', label: 'B', pos: 'nw', title: 'עובדים ומים: (20, 20)', tip: 'בדיקה בקרקע: ' + m('2 × 20 + 20 = 60') + ', ויש 70. הקרקע מספיקה: זו נקודת שבר.', pop: anim && k === 5 });
+      ptTip(ch, host, 30, 10, { cross: true, cls: 'gold', label: 'C', pos: 'se', title: 'מים וקרקע: (30, 10)', tip: 'בדיקה בעובדים: ' + m('30 + 2 × 10 = 50') + ', ויש 60. העובדים מספיקים: זו נקודת שבר.', pop: anim && k === 5 });
+      ptTip(ch, host, 80 / 3, 50 / 3, { cls: 'bad5', label: 'נמחק', pos: 'e', title: 'עובדים וקרקע: (26.7, 16.7)', tip: 'בדיקה במים: ' + m('3 × 26.7 + 3 × 16.7 ≈ 130') + ', ויש רק 120. המים נגמרו קודם: הנקודה מעל העקומה, ומוחקים אותה.', pop: anim && k === 5 });
     }
   }
 });
@@ -4081,7 +4330,7 @@ const prT = (t, x) => '<b class="t">' + t + '</b>' + x;
 /* ---------- pr1a + pr1b: מפעל ״רמון״. Leather 150: sandal 3, bag 1 (X 50, Y 150, s 3). Hours 100: sandal 1, bag 2 (X 100, Y 50, s 0.5).
    A (0, 50) hours, C (50, 0) leather, B (40, 30). ---------- */
 const RMQ = 'מפעל ״רמון״ מייצר סנדלים (' + m('x') + ') ותיקים (' + m('y') + '). לרשותו 150 ק״ג עור ו-100 שעות תפירה. סנדל דורש 3 ק״ג עור ושעת תפירה אחת. תיק דורש ק״ג עור אחד ו-2 שעות תפירה.';
-const RML = [{ X: 50, Y: 150, cls: 1, lab: [14, 118], name: 'עור' }, { X: 100, Y: 50, cls: 2, lab: [60, 27], name: 'שעות' }];
+const RML = [{ X: 50, Y: 150, cls: 1, lab: [33, 58], name: 'עור' }, { X: 100, Y: 50, cls: 2, lab: [53, 29], name: 'שעות' }];
 const RMP = [[0, 50], [40, 30], [50, 0]];
 (function () {
   const D = {}, put = prPut(D);
@@ -4115,13 +4364,13 @@ const RMP = [[0, 50], [40, 30], [50, 0]];
     tables: [
       { title: 'שלבים 1 עד 3: טבלת הנתונים', head: ['גורם', 'כמות', 'לסנדל ' + m('x'), 'לתיק ' + m('y'), m('Xmax'), m('Ymax'), 'שיפוע', 'משוואה'], rows: [['n0', 'q0', 'ax0', 'ay0', 'X0', 'Y0', 's0', 'e0'], ['n1', 'q1', 'ax1', 'ay1', 'X1', 'Y1', 's1', 'e1']] },
       { title: 'שלבים 4 ו-5: נקודות העקומה', head: ['נקודה', 'איך', m('(x, y)'), 'בדיקה'], rows: [['<b>A</b>', 'hA', 'pA', ''], ['<b>B</b>', 'hB', 'pB', 'cB'], ['<b>C</b>', 'hC', 'pC', '']] }],
-    D, chart: { w: 420, h: 300, xmax: 106, ymax: 160, xLabel: 'סנדלים (x)', yLabel: 'תיקים (y)' },
+    D, chart: { xmax: 70, ymax: 70, xLabel: 'סנדלים (x)', yLabel: 'תיקים (y)' },
     say: k => SAY[k],
     draw(ch, k, anim, host) {
       m5Lines(ch, RML, { ends: k >= 3 ? 2 : k >= 2 ? 1 : 0, lines: k >= 3 ? 2 : k >= 2 ? 1 : 0, curve: k >= 11 ? RMP : k >= 10 ? RMP.slice(0, 2) : [], dim: k >= 10, anim: anim ? ({ 2: 'l0', 3: 'l1', 10: 'p0', 11: 'p1' })[k] : '' });
       if (k >= 6) ptTip(ch, host, 0, 50, { cls: 'ok5', label: 'A', pos: 'e', title: 'A (0, 50)', tip: 'רק תיקים: 50. השעות נגמרות (' + m('2 × 50 = 100') + '). עור בשימוש 50 ק״ג, ונשארים 100.', pop: anim && k === 6 });
       if (k >= 7) ptTip(ch, host, 50, 0, { cls: 'ok5', label: 'C', pos: 'n', title: 'C (50, 0)', tip: 'רק סנדלים: 50. העור נגמר (' + m('3 × 50 = 150') + '). שעות בשימוש 50, ונשארות 50.', pop: anim && k === 7 });
-      if (k >= 8) ptTip(ch, host, 40, 30, { cls: 'gold', label: 'B (40, 30)', pos: 'ne', title: 'B: נקודת המפגש', tip: 'עור ' + m('120 + 30 = 150') + ', שעות ' + m('40 + 60 = 100') + '. שני הגורמים נגמרים יחד.', pop: anim && k === 8 });
+      if (k >= 8) ptTip(ch, host, 40, 30, { cross: true, cls: 'gold', label: 'B (40, 30)', pos: 'ne', title: 'B: נקודת המפגש', tip: 'עור ' + m('120 + 30 = 150') + ', שעות ' + m('40 + 60 = 100') + '. שני הגורמים נגמרים יחד.', pop: anim && k === 8 });
     }
   });
 })();
@@ -4145,12 +4394,12 @@ const RMP = [[0, 50], [40, 30], [50, 0]];
       + '<div style="margin-top:6px"><b>נדרש:</b></div><ol><li value="2">מהי העלות השולית של הסנדל ה-20? ה-45? ה-40? ושל התיק ה-30?</li><li>המפעל מייצר ביעילות 20 סנדלים. כמה עור לא מנוצל?</li><li>סווגו את הצירופים ' + m('(44, 20)') + ', ' + m('(30, 30)') + ' ו-' + m('(10, 45)') + '.</li></ol>',
     stages: [['', 1, 4, prLab(7)], ['', 5, 6, prLab(9)], ['', 7, 9, prLab(8)]],
     tables: [{ title: 'הסעיפים, ומספר השלב של כל אחד', head: ['סעיף', 'שלב', 'חישוב', 'תשובה'], rows: R.map(r => ['<b>' + (r[0][0] === 'b' ? 'ב, ' : r[0][0] === 'd' ? 'ד, ' : '') + r[2] + '</b>', '<b>' + r[3] + '</b>', r[0] + 'a', r[0] + 'b']) }],
-    D, chart: { w: 420, h: 290, xmax: 56, ymax: 58, xLabel: 'סנדלים (x)', yLabel: 'תיקים (y)' },
+    D, chart: { xmax: 56, ymax: 58, xLabel: 'סנדלים (x)', yLabel: 'תיקים (y)' },
     say: k => SAY[k],
     draw(ch, k, anim, host) {
       m5Lines(ch, [{ X: 50, Y: 150, cls: 1, lab: [9, 52], name: 'עור' }, { X: 100, Y: 50, cls: 2, lab: [20, 43], name: 'שעות' }], { ends: 0, lines: 2, curve: RMP, dim: true, nolab: true });
       ctick(ch, 'y', 50); ctick(ch, 'x', 50); ctick(ch, 'x', 40); ctick(ch, 'y', 30);
-      ch.dot(0, 50, { cls: 'gold', r: 6, label: 'A', pos: 'ne' }); ch.dot(40, 30, { cls: 'gold', r: 6, label: 'B', pos: 'ne' }); ch.dot(50, 0, { cls: 'gold', r: 6, label: 'C', pos: 'ne' });
+      ch.dot(0, 50, { cls: 'gold', r: 6, label: 'A', pos: 'ne' }); crossMark(ch, 40, 30); ch.dot(40, 30, { cls: 'gold', r: 6, label: 'B', pos: 'ne' }); ch.dot(50, 0, { cls: 'gold', r: 6, label: 'C', pos: 'ne' });
       if (k === 1 || k === 3) ch.curve([RMP[0], RMP[1]], { cls: 'seghl5' });
       if (k === 2 || k === 4) ch.curve([RMP[1], RMP[2]], { cls: 'seghl5' });
       if (k >= 5) ptTip(ch, host, 20, 40, { cls: 'ok5', label: '(20, 40)', pos: 'ne', title: '20 סנדלים, ביעילות', tip: 'על קו השעות: ' + m('y = 50 − 10 = 40') + '. השעות מנוצלות, ומהעור נשארים 50 ק״ג.', pop: anim && k === 5 });
@@ -4185,14 +4434,14 @@ const RMP = [[0, 50], [40, 30], [50, 0]];
   const SAY = { 0: prT('מתחילים', 'שימו לב לשלב 4: הוא מחליט אם יש נקודת שבר. בסעיף ד אותה שאלה, עם יותר קרקע, והתשובה משתנה.') };
   const L = [{ X: 60, Y: 30, cls: 1, lab: [33, 19], name: 'קרקע (60)' }, { X: 80, Y: 60, cls: 2, lab: [13, 54], name: 'מים' }, { X: 100, Y: 50, cls: 3, lab: [60, 25], name: 'קרקע (100)' }];
   m5Worked({
-    id: 'pr2', kick: 'תרגול 2: ההחלטה בשלב 4', title: 'חוות ״יערה״: יש נקודת שבר, או אין?', n: 12, src: 'שאלה לתרגול', wcls: 'prc',
+    id: 'pr2', kick: 'תרגול 2: ההחלטה בשלב 4', title: 'חוות ״יערה״: יש נקודת שבר, או אין?', n: 12, src: 'שאלה לתרגול', wcls: 'prc', fold: true,
     q: 'חוות ״יערה״ מגדלת תפוחים (' + m('x') + ') ואגסים (' + m('y') + '), בטונות. לרשותה 60 דונם ו-240 מ״ק מים. טון תפוחים דורש דונם אחד ו-3 מ״ק מים. טון אגסים דורש 2 דונם ו-4 מ״ק מים.'
       + '<ol style="margin-top:4px"><li>בנו את העקומה. האם יש לה נקודת שבר?</li><li>מהי העלות השולית, ומהי העלות הממוצעת, של טון תפוחים?</li><li>החווה מגדלת ביעילות 20 טון תפוחים. כמה מים לא מנוצלים?</li><li>החווה שוכרת עוד 40 דונם. בנו את העקומה החדשה. כמה עולה עכשיו טון התפוחים ה-50?</li></ol>',
     stages: [['', 1, 3, prLab(1, 3)], ['', 4, 4, 'שלב 4: אותו גורם בשני הצירים?'], ['', 5, 7, 'שלבים 6, 7, 9'], ['', 8, 12, 'ד: 100 דונם, הסדר מחדש']],
     tables: [
       { title: 'שלבים 1 עד 3', head: ['גורם', 'כמות', 'לתפוחים ' + m('x'), 'לאגסים ' + m('y'), m('Xmax'), m('Ymax'), 'שיפוע'], rows: [0, 1, 2].map(i => ['n' + i, 'q' + i, 'ax' + i, 'ay' + i, 'X' + i, 'Y' + i, 's' + i]) },
       { title: 'הסעיפים, ומספר השלב של כל אחד', head: ['סעיף', 'שלב', 'חישוב', 'תשובה'], rows: R.map(r => ['<b>' + r[2] + '</b>', '<b>' + r[3] + '</b>', r[0] + 'a', r[0] + 'b']) }],
-    D, chart: { w: 420, h: 290, xmax: 106, ymax: 64, xLabel: 'תפוחים (x)', yLabel: 'אגסים (y)' },
+    D, chart: { xmax: 88, ymax: 64, xLabel: 'תפוחים (x)', yLabel: 'אגסים (y)' },
     say: k => SAY[k],
     draw(ch, k, anim, host) {
       const old = k >= 5 && k < 11 ? [[0, 30], [60, 0]] : [];
@@ -4200,7 +4449,7 @@ const RMP = [[0, 50], [40, 30], [50, 0]];
       if (k >= 11) ch.curve([[0, 30], [60, 0]], { cls: 'ppcg dim' });
       if (k === 4) { ptTip(ch, host, 0, 30, { cls: 'ok5', label: '30 מול 60', pos: 'e', title: 'ציר y', tip: 'הקרקע נגמרת ב-30 טון אגסים, לפני המים.' }); ptTip(ch, host, 60, 0, { cls: 'ok5', label: '60 מול 80', pos: 'n', title: 'ציר x', tip: 'הקרקע נגמרת ב-60 טון תפוחים, לפני המים.' }); }
       if (k >= 7 && k < 11) ptTip(ch, host, 20, 20, { cls: 'ok5', label: '(20, 20)', pos: 'ne', title: '20 טון תפוחים', tip: 'על קו הקרקע. מים בשימוש 140 מתוך 240: נשארים 100 מ״ק.', pop: anim && k === 7 });
-      if (k >= 10) ptTip(ch, host, 40, 30, { cls: 'gold', label: 'B (40, 30)', pos: 'ne', title: 'נקודת המפגש החדשה', tip: 'עם 100 דונם, קו הקרקע זז החוצה וחוצה את קו המים. כאן שני הגורמים נגמרים יחד.', pop: anim && k === 10 });
+      if (k >= 10) ptTip(ch, host, 40, 30, { cross: true, cls: 'gold', label: 'B (40, 30)', pos: 'ne', title: 'נקודת המפגש החדשה', tip: 'עם 100 דונם, קו הקרקע זז החוצה וחוצה את קו המים. כאן שני הגורמים נגמרים יחד.', pop: anim && k === 10 });
     }
   });
 })();
@@ -4234,7 +4483,7 @@ const RMP = [[0, 50], [40, 30], [50, 0]];
   const SAY = { 0: prT('מתחילים', 'שלושה גורמים. שימו לב לשלב 5: כל נקודת מפגש עוברת בדיקה בגורם השלישי.'), 12: prT('שלב 6: העקומה', 'רק A, B ו-C עברו. A עד B על קו העבודה, B עד C על קו החלב. קו הקירור לא נוגע בעקומה.') };
   const L = [{ X: 40, Y: 60, cls: 1, lab: [4, 57], name: 'חלב' }, { X: 80, Y: 40, cls: 2, lab: [52, 17], name: 'עבודה' }, { X: 55, Y: 55, cls: 3, lab: [37, 23], name: 'קירור' }];
   m5Worked({
-    id: 'pr3', kick: 'תרגול 3: שלושה גורמים', title: 'מחלבת ״גלעד״: גורם שלא נמחק בשלב 4, ונמחק בשלב 5', n: 16, src: 'שאלה לתרגול', tags: { ex: ['5.7'] }, wcls: 'prc',
+    id: 'pr3', kick: 'תרגול 3: שלושה גורמים', title: 'מחלבת ״גלעד״: גורם שלא נמחק בשלב 4, ונמחק בשלב 5', n: 16, src: 'שאלה לתרגול', tags: { ex: ['5.7'] }, wcls: 'prc', fold: true,
     q: 'מחלבת ״גלעד״ מייצרת גבינה (' + m('x') + ') ויוגורט (' + m('y') + '), בטונות. לרשותה 120 אלף ליטר חלב, 80 שעות עבודה ו-55 מקומות בקירור. טון גבינה דורש 3 אלף ליטר חלב, שעת עבודה אחת ומקום אחד בקירור. טון יוגורט דורש 2 אלף ליטר חלב, 2 שעות עבודה ומקום אחד בקירור.'
       + '<ol style="margin-top:4px"><li>בנו את העקומה.</li><li>איזה גורם לעולם לא מגביל? הסבירו.</li><li>כמה מקומות בקירור פנויים ב-A, ב-B וב-C?</li><li>מהי העלות השולית של טון גבינה בכל קטע?</li></ol>',
     stages: [['', 1, 5, prLab(1, 3)], ['', 6, 8, prLab(4)], ['', 9, 11, 'שלב 5: כל זוג, ובדיקה בשלישי'], ['', 12, 12, prLab(6)], ['', 13, 16, 'סעיפים ב עד ד']],
@@ -4242,15 +4491,15 @@ const RMP = [[0, 50], [40, 30], [50, 0]];
       { title: 'שלבים 1 עד 3', head: ['גורם', 'כמות', 'לגבינה ' + m('x'), 'ליוגורט ' + m('y'), m('Xmax'), m('Ymax'), 'שיפוע'], rows: [0, 1, 2].map(i => ['n' + i, 'q' + i, 'ax' + i, 'ay' + i, 'X' + i, 'Y' + i, 's' + i]) },
       { title: 'שלבים 4 ו-5: נקודות, ובדיקה בגורם השלישי', head: ['מה', 'איך', m('(x, y)'), 'בדיקה', 'בעקומה?'], rows: P.map(p => ['<b>' + (p[0].startsWith('N') ? '' : p[0] === 'M' ? '' : p[0]) + '</b>', p[0] + 'h', p[0] + 'p', p[0] + 'c', p[0] + 'v']) },
       { left: true, title: 'סעיפים ב עד ד', head: ['סעיף', 'שלב', 'חישוב', 'תשובה'], rows: R.map(r => ['<b>' + r[2] + '</b>', '<b>' + r[3] + '</b>', r[0] + 'a', r[0] + 'b']) }],
-    D, chart: { w: 420, h: 290, xmax: 84, ymax: 64, xLabel: 'גבינה (x)', yLabel: 'יוגורט (y)' },
+    D, chart: { xmax: 60, ymax: 64, xLabel: 'גבינה (x)', yLabel: 'יוגורט (y)' },
     say: k => SAY[k],
     draw(ch, k, anim, host) {
       m5Lines(ch, L, { ends: k >= 4 ? 3 : k >= 3 ? 2 : k >= 2 ? 1 : 0, lines: k >= 4 ? 3 : k >= 3 ? 2 : k >= 2 ? 1 : 0, curve: k >= 12 ? [[0, 40], [20, 30], [40, 0]] : [], dim: k >= 12, anim: anim ? ({ 2: 'l0', 3: 'l1', 4: 'l2', 12: 'p0' })[k] : '' });
       if (k >= 6) ptTip(ch, host, 0, 40, { cls: 'ok5', label: 'A', pos: 'e', title: 'A (0, 40)', tip: 'רק יוגורט: העבודה נגמרת ב-40 טון.' });
       if (k >= 7) ptTip(ch, host, 40, 0, { cls: 'ok5', label: 'C', pos: 'n', title: 'C (40, 0)', tip: 'רק גבינה: החלב נגמר ב-40 טון.' });
-      if (k >= 9) ptTip(ch, host, 20, 30, { cls: 'gold', label: 'B', pos: 'ne', title: 'B (20, 30): חלב ועבודה', tip: 'הקירור מספיק: 50 מתוך 55. זו נקודת שבר.', pop: anim && k === 9 });
-      if (k >= 10) ptTip(ch, host, 10, 45, { cls: 'bad5', label: '✗', pos: 'ne', title: '(10, 45): חלב וקירור', tip: 'דורש 100 שעות עבודה, ויש 80. מעל העקומה.', pop: anim && k === 10 });
-      if (k >= 11) ptTip(ch, host, 30, 25, { cls: 'bad5', label: '✗', pos: 'ne', title: '(30, 25): עבודה וקירור', tip: 'דורש 140 אלף ליטר חלב, ויש 120. מעל העקומה.', pop: anim && k === 11 });
+      if (k >= 9) ptTip(ch, host, 20, 30, { cross: true, cls: 'gold', label: 'B', pos: 'ne', title: 'B (20, 30): חלב ועבודה', tip: 'הקירור מספיק: 50 מתוך 55. זו נקודת שבר.', pop: anim && k === 9 });
+      if (k >= 10) ptTip(ch, host, 10, 45, { cls: 'bad5', label: 'נמחק', pos: 'ne', title: '(10, 45): חלב וקירור', tip: 'דורש 100 שעות עבודה, ויש 80. מעל העקומה.', pop: anim && k === 10 });
+      if (k >= 11) ptTip(ch, host, 30, 25, { cls: 'bad5', label: 'נמחק', pos: 'ne', title: '(30, 25): עבודה וקירור', tip: 'דורש 140 אלף ליטר חלב, ויש 120. מעל העקומה.', pop: anim && k === 11 });
     }
   });
 })();
@@ -4284,7 +4533,7 @@ const RMP = [[0, 50], [40, 30], [50, 0]];
   R.forEach(r => { put(r[0] + 'a', r[1], r[4], r[6]); put(r[0] + 'b', r[1], r[5], r[6]); });
   const SAY = { 0: prT('מתחילים', 'התרגיל המסכם: שלושה גורמים, וכל השלבים. נסו לבנות את העקומה לבד לפני שאתם לוחצים.'), 11: prT('שלב 6: העקומה', 'A, B, C, D לפי הסדר. שלושה קטעים: עבודה, מחסן, פיברגלס. השיפועים עולים: 0.5, 1, 3.') };
   m5Worked({
-    id: 'pr4', kick: 'תרגול 4: התרגיל המסכם', title: 'מפעל ״אילת״: שלושה גורמים, ושלושתם מגבילים', n: 17, src: 'שאלה לתרגול', wcls: 'prc',
+    id: 'pr4', kick: 'תרגול 4: התרגיל המסכם', title: 'מפעל ״אילת״: שלושה גורמים, ושלושתם מגבילים', n: 17, src: 'שאלה לתרגול', wcls: 'prc', fold: true,
     q: 'מפעל ״אילת״ מייצר קיאקים (' + m('x') + ') וגלשנים (' + m('y') + '). לרשותו 100 שעות עבודה, 60 מקומות במחסן ו-120 ק״ג פיברגלס. קיאק דורש שעת עבודה אחת, מקום אחד במחסן ו-3 ק״ג פיברגלס. גלשן דורש 2 שעות עבודה, מקום אחד ו-ק״ג פיברגלס אחד.'
       + '<ol style="margin-top:4px"><li>בנו את העקומה.</li><li>כמה עולה הקיאק ה-10? ה-30? ה-35?</li><li>סווגו את ' + m('(25, 30)') + ', ' + m('(35, 20)') + ' ו-' + m('(10, 45)') + '. ביעיל: מה לא מנוצל?</li></ol>',
     stages: [['', 1, 5, prLab(1, 3)], ['', 6, 7, prLab(4)], ['', 8, 10, prLab(5)], ['', 11, 11, prLab(6)], ['', 12, 14, prLab(7)], ['', 15, 17, prLab(8, 9)]],
@@ -4292,24 +4541,20 @@ const RMP = [[0, 50], [40, 30], [50, 0]];
       { title: 'שלבים 1 עד 3', head: ['גורם', 'כמות', 'לקיאק ' + m('x'), 'לגלשן ' + m('y'), m('Xmax'), m('Ymax'), 'שיפוע'], rows: [0, 1, 2].map(i => ['n' + i, 'q' + i, 'ax' + i, 'ay' + i, 'X' + i, 'Y' + i, 's' + i]) },
       { title: 'שלבים 4 ו-5: נקודות, ובדיקה בגורם השלישי', head: ['', 'איך', m('(x, y)'), 'בדיקה', 'בעקומה?'], rows: P.map(p => ['<b>' + (p[0] === 'N' ? '' : p[0]) + '</b>', p[0] + 'h', p[0] + 'p', p[0] + 'c', p[0] + 'v']) },
       { left: true, title: 'סעיפים ב ו-ג', head: ['סעיף', 'שלב', 'חישוב', 'תשובה'], rows: R.map(r => ['<b>' + r[2] + '</b>', '<b>' + r[3] + '</b>', r[0] + 'a', r[0] + 'b']) }],
-    D, chart: { w: 420, h: 290, xmax: 74, ymax: 70, xLabel: 'קיאקים (x)', yLabel: 'גלשנים (y)' },
+    D, chart: { xmax: 48, ymax: 63, xLabel: 'קיאקים (x)', yLabel: 'גלשנים (y)' },
     say: k => SAY[k],
     draw(ch, k, anim, host) {
       const P4 = [[0, 50], [20, 40], [30, 30], [40, 0]];
-      ['curve', 'pts', 'ann'].forEach(c => ch.clear(c));
-      const nl = k >= 4 ? 3 : k >= 3 ? 2 : k >= 2 ? 1 : 0, dim = k >= 11 ? ' dim' : '';
-      if (nl >= 1) { ch.curve([[0, 50], [70, 15]], { cls: 'cl1' + dim, animate: anim && k === 2, dur: 0.9 }); ctick(ch, 'y', 50, 'lbl1'); ch.text(51, 30, 'קו העבודה, עד 100', 'lbl1', 'start'); }
-      if (nl >= 2) { ch.curve([[0, 60], [60, 0]], { cls: 'cl2' + dim, animate: anim && k === 3, dur: 0.9 }); ctick(ch, 'y', 60, 'lbl2'); ctick(ch, 'x', 60, 'lbl2'); ch.text(49, 6, 'קו המחסן', 'lbl2', 'start'); }
-      if (nl >= 3) { ch.curve([[52 / 3, 68], [40, 0]], { cls: 'cl3' + dim, animate: anim && k === 4, dur: 0.9 }); ctick(ch, 'x', 40, 'lbl3'); ch.text(22, 64, 'קו הפיברגלס, מ-120', 'lbl3', 'start'); }
-      if (k >= 11) for (let i = 0; i < 3; i++) ch.curve([P4[i], P4[i + 1]], { cls: 'ppcg', animate: anim && k === 11 && i === 0, dur: 0.8 });
+      const L4 = [{ X: 100, Y: 50, cls: 1, lab: [33, 37], name: 'עבודה' }, { X: 60, Y: 60, cls: 2, lab: [39, 14], name: 'מחסן' }, { X: 40, Y: 120, cls: 3, lab: [22, 58], name: 'פיברגלס' }];
+      m5Lines(ch, L4, { ends: k >= 4 ? 3 : k >= 3 ? 2 : k >= 2 ? 1 : 0, lines: k >= 4 ? 3 : k >= 3 ? 2 : k >= 2 ? 1 : 0, curve: k >= 11 ? P4 : [], dim: k >= 11, anim: anim ? ({ 2: 'l0', 3: 'l1', 4: 'l2', 11: 'p0' })[k] : '' });
       if (k === 12) ch.curve([P4[0], P4[1]], { cls: 'seghl5' });
       if (k === 13) ch.curve([P4[1], P4[2]], { cls: 'seghl5' });
       if (k === 14) ch.curve([P4[2], P4[3]], { cls: 'seghl5' });
       if (k >= 6) ptTip(ch, host, 0, 50, { cls: 'ok5', label: 'A', pos: 'e', title: 'A (0, 50)', tip: 'רק גלשנים: העבודה נגמרת ב-50.' });
       if (k >= 7) ptTip(ch, host, 40, 0, { cls: 'ok5', label: 'D', pos: 'n', title: 'D (40, 0)', tip: 'רק קיאקים: הפיברגלס נגמר ב-40.' });
-      if (k >= 8) ptTip(ch, host, 20, 40, { cls: 'gold', label: 'B', pos: 'ne', title: 'B (20, 40)', tip: 'עבודה ומחסן נגמרים יחד. פיברגלס: 100 מתוך 120.', pop: anim && k === 8 });
-      if (k >= 9) ptTip(ch, host, 30, 30, { cls: 'gold', label: 'C', pos: 'e', title: 'C (30, 30)', tip: 'מחסן ופיברגלס נגמרים יחד. עבודה: 90 מתוך 100.', pop: anim && k === 9 });
-      if (k >= 10) ptTip(ch, host, 28, 36, { cls: 'bad5', label: '✗', pos: 'n', title: '(28, 36): עבודה ופיברגלס', tip: 'דורש 64 מקומות במחסן, ויש 60. מעל העקומה.', pop: anim && k === 10 });
+      if (k >= 8) ptTip(ch, host, 20, 40, { cross: true, cls: 'gold', label: 'B', pos: 'ne', title: 'B (20, 40)', tip: 'עבודה ומחסן נגמרים יחד. פיברגלס: 100 מתוך 120.', pop: anim && k === 8 });
+      if (k >= 9) ptTip(ch, host, 30, 30, { cross: true, cls: 'gold', label: 'C', pos: 'e', title: 'C (30, 30)', tip: 'מחסן ופיברגלס נגמרים יחד. עבודה: 90 מתוך 100.', pop: anim && k === 9 });
+      if (k >= 10) ptTip(ch, host, 28, 36, { cls: 'bad5', label: 'נמחק', pos: 'n', title: '(28, 36): עבודה ופיברגלס', tip: 'דורש 64 מקומות במחסן, ויש 60. מעל העקומה.', pop: anim && k === 10 });
       if (k >= 15) ptTip(ch, host, 25, 30, { cls: 'in5', label: '(25, 30)', pos: 'sw', title: 'לא יעיל', tip: 'מכל שלושת הגורמים נשאר.', pop: anim && k === 15 });
       if (k >= 16) ptTip(ch, host, 35, 20, { cls: 'bad5', label: '(35, 20)', pos: 'e', title: 'בלתי אפשרי', tip: 'חסר פיברגלס: 125 מתוך 120.', pop: anim && k === 16 });
       if (k >= 17) ptTip(ch, host, 10, 45, { cls: 'ok5', label: '(10, 45)', pos: 'ne', title: 'יעיל', tip: 'העבודה בדיוק 100. פנויים 5 מקומות במחסן ו-45 ק״ג פיברגלס.', pop: anim && k === 17 });
