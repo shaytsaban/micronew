@@ -1853,21 +1853,166 @@ function handDraw(ch, P, W, k, o = {}) {
 const r2 = v => (Math.round(v * 100) / 100).toString();
 const eqs = (a, b) => (Math.abs(Math.round(a / b * 100) / 100 - a / b) < 1e-9 ? ' = ' : ' ≈ ') + r2(a / b);
 
+/* ===== lesson 5 layer: larger tables, values that fly into their cells, a clean sheet (formula bar only, typing aligned right),
+   and chart points that explain themselves when clicked ===== */
+(function () {
+  const st = document.createElement('style');
+  st.textContent = `
+  .xl-rib{display:none!important}
+  .xl-g td,.xl-g td.f{text-align:right!important}
+  .xl-ed .xl-in{text-align:right!important}
+  .xl-g td{font-size:18px!important;height:36px!important}
+  .xl-bar{font-family:Rubik,Heebo,'Segoe UI',sans-serif!important;font-size:17px!important;unicode-bidi:plaintext;text-align:start!important}
+  .xl-name{font-size:17px}
+  .wbt{font-size:18px!important}.wbt td{height:40px;font-size:18px!important;font-weight:700}.wbt th{font-size:15px!important}
+  .wb3 .wbt,.wb2 .wbt{font-size:17px!important}
+  @keyframes l5fly{0%{transform:translate(-60px,-34px) scale(1.9);opacity:0;color:#d97706}55%{opacity:1}100%{transform:none;opacity:1}}
+  .wbt td.new,.l5t td.new{animation:l5fly .75s cubic-bezier(.2,.8,.25,1) both;background:#fff4d6}
+  .l5t{border-collapse:collapse;width:100%;font-size:18px}
+  .l5t th{background:#1e2a4a;color:#fff;padding:6px 8px;font-size:15px;text-align:center}
+  .l5t td{border:1px solid #d5d9e3;padding:6px 8px;text-align:center;font-weight:700;height:38px}
+  .l5t td.lbl{text-align:right;font-weight:600;background:#f6f7fb}
+  .ptw{position:relative}
+  .ptw .pt.tipme{cursor:pointer;stroke:#fff;stroke-width:2.5}
+  .ptw .pt.tipme:hover{stroke:#111}
+  .pttip{position:absolute;z-index:30;max-width:300px;background:#fff;border:2px solid #1e2a4a;border-radius:12px;padding:9px 12px;font-size:15.5px;line-height:1.45;box-shadow:0 10px 26px rgba(0,0,0,.22);animation:l5pop .35s ease both;direction:rtl}
+  .pttip b.t{display:block;font-size:16px;margin-bottom:2px}
+  .pttip .x{position:absolute;top:2px;left:7px;cursor:pointer;color:#777;font-size:15px}
+  @keyframes l5pop{0%{transform:translateY(12px) scale(.85);opacity:0}100%{transform:none;opacity:1}}
+  .ch .pt.ok5{fill:#16a34a}.ch .pt.in5{fill:#2563eb}.ch .pt.bad5{fill:#dc2626}.ch .pt.gold{fill:#d4a017}
+  .ptkey{display:flex;flex-wrap:wrap;gap:12px;font-size:14px;margin-top:4px}.ptkey i{display:inline-block;width:12px;height:12px;border-radius:50%;margin-left:5px;vertical-align:-1px}
+  .clickhint{font-size:14px;color:#555;margin-top:2px}
+  `;
+  document.head.appendChild(st);
+})();
+/* a point that explains itself. ch = PPC chart, host = the element the chart was drawn into.
+   o = {cls: 'ok5' (on the curve) | 'in5' (inside) | 'bad5' (outside) | 'gold', label, pos, title, tip (html), r} */
+function ptTip(ch, host, x, y, o = {}) {
+  const g = ch.dot(x, y, { cls: (o.cls || 'gold') + ' tipme', r: o.r || 8, label: o.label, pos: o.pos, layer: o.layer || 'ann', pop: o.pop });
+  host = host || g.dot.ownerSVGElement.parentElement; host.classList.add('ptw');
+  const show = ev => {
+    if (ev) ev.stopPropagation();
+    host.querySelectorAll('.pttip').forEach(e => e.remove());
+    const hr = host.getBoundingClientRect(), pr = g.dot.getBoundingClientRect();
+    const tip = h('div.pttip', h('span.x', '✕'), h('b.t', { html: o.title || o.label || '' }), h('div', { html: o.tip || '' }));
+    tip.querySelector('.x').addEventListener('click', e => { e.stopPropagation(); tip.remove(); });
+    host.appendChild(tip);
+    const cx = pr.left - hr.left + pr.width / 2, cy = pr.top - hr.top;
+    let left = cx - tip.offsetWidth / 2; left = Math.max(4, Math.min(left, host.clientWidth - tip.offsetWidth - 4));
+    let top = cy - tip.offsetHeight - 12; if (top < 4) top = cy + 26;
+    tip.style.left = left + 'px'; tip.style.top = top + 'px';
+  };
+  g.dot.addEventListener('click', show); if (g.lab) { g.lab.style.cursor = 'pointer'; g.lab.addEventListener('click', show); }
+  g.show = show;
+  return g;
+}
+/* the legend under a chart with clickable points */
+function ptKey(items) { return h('div', h('div.ptkey', items.map(([c, t]) => h('span', h('i', { style: 'background:' + c }), t))), h('div.clickhint', '👆 לחצו על כל נקודה בגרף לקבלת הסבר')); }
+const PT_C = { ok5: '#16a34a', in5: '#2563eb', bad5: '#dc2626', gold: '#d4a017' };
+
 /* ===== lesson 5 cover ===== */
 slide({
   id: 'cover', kick: '', title: 'שיעור 5: מגבלות של גורמי ייצור', steps: 0,
   build(root, ctx) {
     ctx.container.classList.add('cv');
     const pg = ctx.container.parentElement; if (pg && pg.classList.contains('pslide')) pg.classList.add('cv');
-    const chips = ['🌾 דוגמת פתיחה: משק ״נגב״', '📏 גורם ייצור אחד: קו מגבלה', '💧 גורם ייצור שני', '📍 נקודת המפגש', '📉 העקומה היא הקו הנמוך', '📝 שאלה בסגנון מבחן: משק ״שייקה״', '🧮 גיליון חי: מפעל ״כרמל״'];
+    const chips = ['⚖️ התמחות מול מגבלות: מה דומה ומה שונה', '📏 קו מגבלה של גורם ייצור', '📉 העקומה היא הקו הנמוך', '🏭 אבטלה מבנית וגודלה', '🎯 סיווג צירופים', '💲 עלות שולית על העקומה', '3️⃣ שלושה גורמים וקווים מקבילים', '📝 שאלות מבחן וגיליונות חיים', '✅ סיכום ושאלות להגשה'];
     root.appendChild(h('div.cvw', h('div.orb.o1'), h('div.orb.o2'), h('div.orb.o3'),
       h('div.kl', 'מבוא למיקרו כלכלה · שיעור 5 · 24.11.2026'),
       h('h1', 'מגבלות של גורמי ייצור', h('span.ac', 'מקווי מגבלה לעקומת התמורה')),
-      h('div.st', 'כל גורם ייצור מוגבל בכמות שלו, ולכן יוצר קו מגבלה. פותחים בדוגמה עם גורם אחד, מוסיפים גורם שני, מוצאים איפה הקווים נפגשים, ורואים שעקומת התמורה היא הקו הנמוך מבין השניים. אחר כך שאלה בסגנון מבחן וגיליון חי.'),
+      h('div.st', 'כל גורם ייצור מוגבל בכמות שלו, ולכן יוצר קו מגבלה. פותחים בדוגמה עם גורם אחד, מוסיפים גורם שני, מוצאים איפה הקווים נפגשים, ורואים שעקומת התמורה היא הקו הנמוך מבין השניים. אחר כך אבטלה מבנית, סיווג צירופים, עלות שולית, שלושה גורמי ייצור וקווים מקבילים, שאלות מבחן מהמאגר וגיליונות חיים.'),
       h('div.chips', { style: 'max-width:66%' }, chips.map(c => h('span', c))),
       h('div.tw', h('div.mmt', 'שני גורמים, שני קווים'), h('div', { html: '<svg viewBox="0 0 160 160" aria-hidden="true">' + ART.owl + '</svg>' }), h('div.mmb', 'והעקומה? תמיד הקו הנמוך')),
       h('div.ft', { html: '<b>ד״ר שי צבאן</b> · המרכז האקדמי רופין · סמסטר א׳ תשפ״ז' })));
   }
+});
+
+/* ===== lesson 5 opening: how the technique of today differs from building the curve out of workers ===== */
+(function () {
+  const st = document.createElement('style');
+  st.textContent = `
+  .d0g{display:grid;grid-template-columns:minmax(0,1.7fr) minmax(0,.9fr);gap:14px;align-items:start}.d0g .d0s{display:flex;flex-direction:column;gap:8px}
+  .d0c{background:#fff;border:2px solid #d5d9e3;border-radius:14px;padding:8px 10px}
+  .d0c h3{margin:0 0 2px;font-size:19px;text-align:center}
+  .d0c .sub{font-size:14px;text-align:center;color:#555;margin-bottom:2px}
+  .d0c.w{border-color:#2563eb}.d0c.w h3{color:#1d4ed8}
+  .d0c.f{border-color:#7c3aed}.d0c.f h3{color:#6d28d9}
+  .d0t{border-collapse:separate;border-spacing:0 4px;width:100%;font-size:14.8px;line-height:1.3}
+  .d0t th{font-size:15px;padding:4px 8px;color:#fff;text-align:center}
+  .d0t th.w{background:#2563eb;border-radius:0 10px 10px 0}.d0t th.f{background:#7c3aed;border-radius:10px 0 0 10px}.d0t th.s{background:#1e2a4a}
+  .d0t td{padding:3px 8px;vertical-align:top;background:#f6f7fb}
+  .d0t td.s{font-weight:800;white-space:nowrap;background:#1e2a4a;color:#fff;border-radius:0 10px 10px 0;text-align:center;vertical-align:middle;font-size:15px}
+  .d0t td.w{background:#eef4ff}.d0t td.f{background:#f4efff;border-radius:10px 0 0 10px}
+  .d0t td.both{border-radius:10px 0 0 10px;font-size:15px}
+  .d0t td.same{background:#e9f8ef}.d0t td.diff{background:#fff1e6}
+  .d0t tr.rv td{transition:background .3s}
+  .d0t tr.now td.w,.d0t tr.now td.f,.d0t tr.now td.both{box-shadow:inset 0 0 0 2px #f2b705}
+  .d0t .k{color:#1d4ed8;font-weight:800}.d0t .kf{color:#6d28d9;font-weight:800}
+  `;
+  document.head.appendChild(st);
+})();
+slide({
+  id: 'd0', kick: 'לפני שמתחילים', kc: 't', title: 'שתי דרכים לבנות עקומת תמורה: מעובדים, ומגורמי ייצור', steps: 6,
+  build(root, ctx) {
+    /* workers: א 6x or 3y, ב 4x or 4y. factors: land 60 (x 2, y 3), water 40 (x 2, y 1) */
+    const R = [
+      ['הנתונים',
+        'לכל עובד: כמה הוא מייצר מכל מוצר. עובד א: ' + m('6') + ' יחידות x או ' + m('3') + ' יחידות y. עובד ב: ' + m('4') + ' יחידות x או ' + m('4') + ' יחידות y.',
+        'לכל גורם ייצור: כמה יש ממנו במשק, וכמה ממנו דורשת כל יחידה. קרקע ' + m('60') + ': יחידת x דורשת ' + m('2') + ', יחידת y דורשת ' + m('3') + '. מים ' + m('40') + ': יחידת x דורשת ' + m('2') + ', יחידת y דורשת ' + m('1') + '.'],
+      ['נקודות הקצה',
+        '<span class="k">מחברים</span> את כל העובדים. ' + m('Ymax = 3 + 4 = 7') + ', ' + m('Xmax = 6 + 4 = 10') + '.',
+        'לכל גורם: הכמות חלקי הדרישה. קרקע: ' + m(F('60', '3') + ' = 20') + ' של y, ' + m(F('60', '2') + ' = 30') + ' של x. מים: ' + m(F('40', '1') + ' = 40') + ' של y, ' + m(F('40', '2') + ' = 20') + ' של x. <span class="kf">לוקחים את הנמוך</span>: ' + m('Ymax = 20') + ', ' + m('Xmax = 20') + '.'],
+      ['איך נוצרת העקומה',
+        'העובדים עוברים לייצר x לפי העלות השולית, מהנמוכה לגבוהה. כל עובד מוסיף קטע: ' + m('(0, 7) → (6, 4) → (10, 0)') + '. שבר אחד אחרי כל עובד.',
+        'כל גורם יוצר קו ישר. העקומה היא <span class="kf">הקו הנמוך מבין השניים</span>. השבר הוא הנקודה שבה הקווים נפגשים: ' + m('(15, 10)') + '.'],
+      ['העלות השולית',
+        'העלות השולית של העובד שעובר בקטע: ' + m(F('y', 'x')) + '. עובד א: ' + m(F('3', '6') + ' = 0.5') + '. עובד ב: ' + m(F('4', '4') + ' = 1') + '.',
+        'השיפוע של הקו שמגביל בקטע. בקטע הראשון הקרקע: ' + m(F('20', '30') + ' ≈ 0.67') + '. בקטע השני המים: ' + m(F('40', '20') + ' = 2') + '.'],
+      ['מה דומה', '<b>בשתי הדרכים</b> העקומה קעורה, העלות השולית של x עולה ככל שמייצרים יותר x, ובעקומה יש נקודות שבר. גם הכללים לעלות כוללת, ממוצעת ושולית, ולעלות משמאל ומימין לנקודה, נשארים אותם כללים.'],
+      ['מה שונה', '<b>בעובדים מחברים</b> (סכום הכמויות של כל העובדים). <b>בגורמי ייצור לוקחים את הנמוך</b> (הגורם שנגמר ראשון קובע). ועוד הבדל חשוב: עובד תמיד מייצר משהו, ולכן אין עובד מבוטל. בגורמי ייצור, לאורך העקומה נשאר בדרך כלל עודף מהגורם שאינו מגביל. לעודף הזה קוראים <t k="sunemp">אבטלה מבנית</t>, והיא הנושא של החלק השני של השיעור.']];
+    const T = h('table.d0t'); T.appendChild(h('thead', h('tr', h('th.s', 'שלב'), h('th.w', '👷 התמחות: מנתוני עובדים'), h('th.f', '🌾 גורמי ייצור: היום'))));
+    const tb = h('tbody'); T.appendChild(tb);
+    const trs = R.map((r, i) => {
+      const tr = r.length === 3 ? h('tr', h('td.s', r[0]), h('td.w', { html: r[1] }), h('td.f', { html: r[2] }))
+        : h('tr', h('td.s', r[0]), h('td.both.' + (i === 4 ? 'same' : 'diff'), { colspan: 2, html: r[1] }));
+      tb.appendChild(rv(tr, i + 1)); return tr;
+    });
+    const hw = h('div'), hf = h('div');
+    const cw = h('div.d0c.w', h('h3', 'מעובדים (שיעורים 3 ו-4)'), hw);
+    const cf = h('div.d0c.f', h('h3', 'מגורמי ייצור (משק ״נגב״)'), hf);
+    root.appendChild(h('div.d0g', T, h('div.d0s', cw, cf)));
+    const chW = PPC.chart(hw, { w: 380, h: 185, xmax: 12, ymax: 8.6, xLabel: 'x', yLabel: 'y', ticksX: [], ticksY: [], grid: false, showTicks: false });
+    const chF = PPC.chart(hf, { w: 380, h: 185, xmax: 34, ymax: 44, xLabel: 'x', yLabel: 'y', ticksX: [], ticksY: [], grid: false, showTicks: false });
+    function draw(k, anim) {
+      [chW, chF].forEach(c => ['curve', 'pts', 'ann'].forEach(z => c.clear(z)));
+      trs.forEach((tr, i) => tr.classList.toggle('now', k === i + 1));
+      /* workers */
+      if (k >= 2) { ctick(chW, 'y', 7); ctick(chW, 'x', 10); chW.dot(0, 7, { cls: 'gold', r: 7, pop: anim && k === 2 }); chW.dot(10, 0, { cls: 'gold', r: 7, pop: anim && k === 2 }); }
+      if (k >= 3) {
+        chW.curve([[0, 7], [6, 4]], { cls: 'ppcg', animate: anim && k === 3, dur: .8 }); chW.curve([[6, 4], [10, 0]], { cls: 'ppcg', animate: anim && k === 3, dur: 1.4 });
+        chW.dot(6, 4, { cls: 'gold', r: 7, label: '(6, 4)', pos: 'ne' });
+        chW.text(1.6, 4.6, 'עובד א', 'lblg', 'start'); chW.text(8.6, 2.8, 'עובד ב', 'lblg', 'start');
+      }
+      if (k >= 4) { chW.text(3.2, 6.6, '0.5', 'lbl2', 'start'); chW.text(8.6, 1.2, '1', 'lbl2', 'start'); }
+      /* factors */
+      if (k >= 2) {
+        [[30, 'x', 'lbl1'], [20, 'y', 'lbl1'], [20, 'x', 'lbl2'], [40, 'y', 'lbl2']].forEach(([v, a, c]) => ctick(chF, a, v, c));
+        chF.dot(30, 0, { cls: 'c1', r: 6 }); chF.dot(0, 20, { cls: 'gold', r: 7 }); chF.dot(20, 0, { cls: 'gold', r: 7 }); chF.dot(0, 40, { cls: 'c2', r: 6 });
+      }
+      if (k >= 3) {
+        chF.curve([[0, 20], [30, 0]], { cls: 'cl1 dim', animate: anim && k === 3, dur: .9 }); chF.curve([[0, 40], [20, 0]], { cls: 'cl2 dim', animate: anim && k === 3, dur: .9 });
+        chF.text(23, 6.5, 'קרקע', 'lbl1', 'start'); chF.text(3, 37, 'מים', 'lbl2', 'start');
+        chF.curve([[0, 20], [15, 10]], { cls: 'ppcg', animate: anim && k === 3, dur: 1.1 }); chF.curve([[15, 10], [20, 0]], { cls: 'ppcg', animate: anim && k === 3, dur: 1.6 });
+        chF.dot(15, 10, { cls: 'gold', r: 7, label: '(15, 10)', pos: 'ne' });
+      }
+      if (k >= 4) { chF.text(5.5, 19.5, '0.67', 'lblg', 'start'); chF.text(18.4, 7.5, '2', 'lblg', 'start'); }
+    }
+    draw(ctx.static ? 6 : 0, false);
+    ctx.onStep((k, dir, init) => draw(k, !init && dir > 0));
+  }
+});
+Object.assign(GLOSS, {
+  sunemp: { t: 'אבטלה מבנית', d: 'משק שמייצר ביעילות, על עקומת התמורה, ובכל זאת נשאר לו עודף מגורם ייצור שאינו מגביל. דוגמה: משק ״נגב״ מגדל רק חיטה, 20 טון. כל 60 הדונם בשימוש, אבל מתוך 40 יחידות מים רק 20 בשימוש. 20 יחידות מים בלי שימוש: אבטלה מבנית של מים.', slide: 'u1' }
 });
 
 /* ===== costs on the built curve: the students try first, then the graphical solution is revealed click by click ===== */
@@ -2187,6 +2332,16 @@ stageSlide({
 });
 
 
+/* plain-language explanation of a combination in משק ״נגב״ (land 60: x uses 2, y uses 3; water 40: x uses 2, y uses 1) */
+function ngTip(x, y, landOnly) {
+  const a = 2 * x + 3 * y, w = 2 * x + y;
+  const L = 'קרקע: ' + m('2 × ' + x + ' + 3 × ' + y + ' = ' + a) + (a <= 60 ? ' דונם, מתוך 60. מספיק.' : ' דונם, ויש רק 60. חסר.');
+  if (landOnly) return { cls: a < 60 ? 'in5' : a === 60 ? 'ok5' : 'bad5', title: (a < 60 ? 'מתחת לקו: אפשרי, ונשאר עודף' : a === 60 ? 'על הקו: כל הקרקע בשימוש' : 'מעל הקו: בלתי אפשרי'), tip: L };
+  const W = 'מים: ' + m('2 × ' + x + ' + 1 × ' + y + ' = ' + w) + (w <= 40 ? ' יחידות, מתוך 40. מספיק.' : ' יחידות, ויש רק 40. חסר.');
+  const ok = a <= 60 && w <= 40;
+  const where = ok ? 'מתחת לשני הקווים (או עליהם): אפשרי' : (a > 60 && w > 40) ? 'מעל שני הקווים: בלתי אפשרי' : (a > 60 ? 'מעל קו הקרקע, אף שהוא מתחת לקו המים: בלתי אפשרי' : 'מעל קו המים, אף שהוא מתחת לקו הקרקע: בלתי אפשרי');
+  return { cls: ok ? 'in5' : 'bad5', title: where, tip: L + '<br>' + W + (ok ? '' : '<br><b>מספיק שגורם ייצור אחד חסר, והצירוף בלתי אפשרי.</b>') };
+}
 /* ----- the new topic. Opening example: one production factor ----- */
 const NG = conEco({ F: [{ name: 'קרקע', q: 60, ax: 2, ay: 3, lab: [3, 19.5] }, { name: 'מים', q: 40, ax: 2, ay: 1, lab: [2.5, 36] }] });
 slide({
@@ -2224,7 +2379,7 @@ slide({
       trs.forEach((tr, i) => { tr.style.visibility = k >= R[i][0] ? 'visible' : 'hidden'; tr.className = k === R[i][0] ? 'hl' : ''; [...tr.cells].forEach(td => td.classList.toggle('new', k === R[i][0])); });
       if (k >= 6) { ch.curve([[0, 20], [30, 0]], { cls: 'cl1', animate: anim && k === 6, dur: 1.1 }); ch.text(4.5, 18.6, 'קו הקרקע', 'lbl1', 'start'); }
       if (k >= 2) ctick(ch, 'x', 30, 'lbl1'); if (k >= 3) ctick(ch, 'y', 20, 'lbl1');
-      R.forEach(r => { if (k < r[0]) return; const big = r[0] >= 8; ch.dot(r[2], r[3], { cls: r[6] === 'okc' ? 'low' : r[6] === 'badc' ? 'bad' : 'c1', r: 7, pop: anim && k === r[0], label: (r[0] >= 4) ? '(' + r[2] + ', ' + r[3] + ')' : '', pos: 'ne' }); });
+      R.forEach(r => { if (k < r[0]) return; const t = ngTip(r[2], r[3], true); ptTip(ch, host, r[2], r[3], { cls: t.cls, r: 8, pop: anim && k === r[0], label: '(' + r[2] + ', ' + r[3] + ')', pos: 'ne', title: '(' + r[2] + ', ' + r[3] + '): ' + t.title, tip: t.tip }); });
       exp.innerHTML = says[Math.min(k, says.length - 1)];
     }
     draw(ctx.static ? 10 : 0, false);
@@ -2273,8 +2428,10 @@ slide({
       dc[1][4].classList.toggle('new', k === 2); dc[1][5].classList.toggle('new', k === 3);
       trs.forEach((tr, i) => { tr.style.visibility = k >= R[i][0] ? 'visible' : 'hidden'; [...tr.cells].forEach(td => td.classList.toggle('new', k === R[i][0])); });
       conDraw(ch, NG, { l1: 2, l2: k >= 4 ? 2 : 0, e2x: k >= 2 && k < 4, e2y: k >= 3 && k < 4, anim: anim ? (k === 2 ? 'e2x' : k === 3 ? 'e2y' : k === 4 ? 'l2' : '') : '' });
-      R.forEach(r => { if (k < r[0]) return; const ok = 2 * r[1] + 3 * r[2] <= 60 && 2 * r[1] + r[2] <= 40; if (r[1] && r[2]) ch.dot(r[1], r[2], { cls: ok ? 'low' : 'bad', r: 8, pop: anim && k === r[0], label: '(' + r[1] + ', ' + r[2] + ')', pos: 'sw', layer: 'ann' }); else PPC.el('circle', { cx: ch.sx(r[1]), cy: ch.sy(r[2]), r: 14, fill: 'none', stroke: 'var(--bad)', 'stroke-width': 3.5 }, ch.layer('ann')); });
-      if (k >= 9) ch.dot(18, 6, { cls: 'hollow', r: 7, label: '(18, 6)', pos: 'ne', layer: 'ann' });
+      R.forEach(r => { if (k < r[0]) return; const t = ngTip(r[1], r[2]); const lab = '(' + r[1] + ', ' + r[2] + ')';
+        if (!(r[1] && r[2])) PPC.el('circle', { cx: ch.sx(r[1]), cy: ch.sy(r[2]), r: 15, fill: 'none', stroke: 'var(--bad)', 'stroke-width': 3 }, ch.layer('ann'));
+        ptTip(ch, host, r[1], r[2], { cls: t.cls, r: 8, pop: anim && k === r[0], label: lab, pos: r[1] ? 'n' : 'e', title: lab + ': ' + t.title, tip: t.tip }); });
+      if (k >= 9) { ptTip(ch, host, 18, 6, { cls: 'gold', r: 8, label: '? (18, 6)', pos: 'ne', title: '(18, 6): הצירוף שבשאלה', tip: '18 טון עגבניות ו-6 טון חיטה. הנקודה נמצאת <b>מתחת לקו הקרקע</b> אבל <b>מעל קו המים</b>, כלומר בין שני הקווים. האם היא אפשרית? ענו על השאלה משמאל.' }); }
       exp.innerHTML = says[Math.min(k, says.length - 1)];
     }
     draw(ctx.static ? 9 : 0, false);
@@ -2297,7 +2454,7 @@ stageSlide({
     ['<b>x במפגש</b>', { v: m('x = 20 × ' + F('3', '4')), s: 6 }, { v: m('x = 15'), s: 6 }],
     ['<b>y במפגש</b>', { v: m('y = 40 − 2 × 15'), s: 7 }, { v: m('y = 10'), s: 7 }],
     ['<b>בדיקה</b><br>בקו הקרקע', { v: m('20 − ' + F('2', '3') + ' × 15'), s: 8 }, { v: m('10 ✓'), s: 8 }]],
-  after: [[L2.card('ok', 'עקומת התמורה עם שני גורמי ייצור', 'בכל x, המשק מוגבל על ידי הגורם שנגמר ראשון. לכן העקומה היא <b>הקו הנמוך מבין השניים</b>: קו הקרקע עד נקודת המפגש, וקו המים אחריה. הנקודות: ' + m('A (0, 20) → B (15, 10) → C (20, 0)') + '.'), 11]],
+  after: [[L2.card('ok', 'עקומת התמורה עם שני גורמי ייצור', 'בכל x, המשק מוגבל על ידי הגורם שנגמר ראשון. לכן העקומה היא <b>הקו הנמוך מבין השניים</b>: קו הקרקע עד נקודת המפגש, וקו המים אחריה. הנקודות: ' + 'A ' + m('(0, 20)') + ', אחריה B ' + m('(15, 10)') + ', ובסוף C ' + m('(20, 0)') + '.'), 11]],
   chart: host => PPC.chart(host, { w: 470, h: 340, xmax: 35, ymax: 45, xLabel: 'עגבניות (x)', yLabel: 'חיטה (y)', ticksX: [], ticksY: [], grid: false, showTicks: false }),
   say(k) {
     return ['<b class="t">לפני שמתחילים</b>שני קווי המגבלה מהשקף הקודם. הם נפגשים בנקודה אחת. נמצא אותה בחישוב.',
@@ -2320,6 +2477,11 @@ stageSlide({
     if (k === 6) { ch.line(15, 0, 15, 42, 'guide x'); ch.text(15, -3.6, '15', 'bl', 'middle'); }
     if (k === 7 || k === 8) { ch.line(15, 0, 15, 10, 'guide x'); ch.line(0, 10, 15, 10, 'guide y'); }
     if (k >= 12) { ch.text(6.5, 17.5, '0.67', 'lblg', 'start'); ch.text(18.6, 5.5, '2', 'lblg', 'start'); }
+    if (k >= 10) {
+      ptTip(ch, null, 0, 20, { cls: 'ok5', r: 7, title: 'A (0, 20): רק חיטה', tip: 'הקרקע נגמרת ראשונה: היא מספיקה ל-20 טון חיטה בלבד. המים מספיקים ל-40, ולכן חצי מהמים, 20 יחידות, נשארים בלי שימוש.' });
+      ptTip(ch, null, 15, 10, { cls: 'ok5', r: 7, title: 'B (15, 10): נקודת המפגש', tip: 'הנקודה היחידה ששני גורמי הייצור מנוצלים בה עד הסוף. קרקע: ' + m('2 × 15 + 3 × 10 = 60') + '. מים: ' + m('2 × 15 + 10 = 40') + '. כאן העקומה נשברת.' });
+      ptTip(ch, null, 20, 0, { cls: 'ok5', r: 7, title: 'C (20, 0): רק עגבניות', tip: 'המים נגמרים ראשונים: הם מספיקים ל-20 טון עגבניות בלבד. הקרקע מספיקה ל-30, ולכן 20 דונם נשארים בלי שימוש.' });
+    }
   }
 });
 
@@ -2334,7 +2496,7 @@ slide({
      c('y', '2. קו המגבלה של הגורם השני', 'אותו חישוב, לגורם השני: ' + m('Xmax = ' + F('40', '2') + ' = 20') + ', ' + m('Ymax = ' + F('40', '1') + ' = 40') + '.'),
      c('ac', '3. משוואה לכל קו', m('y = Ymax − ' + F('Ymax', 'Xmax') + ' × x') + '<div style="margin-top:4px">' + m('y = 20 − ' + F('2', '3') + 'x') + ' &nbsp; ו-&nbsp; ' + m('y = 40 − 2x') + '</div>'),
      c('mc', '4. נקודת המפגש', 'משווים בין שתי המשוואות, מוצאים x ומציבים: ' + m('B (15, 10)') + '. שם שני הגורמים מנוצלים עד הסוף.'),
-     c('ok', '5. מסמנים את העקומה', 'בכל x, הקו הנמוך מבין השניים: ' + m('(0, 20) → (15, 10) → (20, 0)') + '.')].forEach((e, k) => g.appendChild(rv(e, k + 1)));
+     c('ok', '5. מסמנים את העקומה', 'בכל x, הקו הנמוך מבין השניים: ' + m('(0, 20)') + ', אחריה ' + m('(15, 10)') + ', ובסוף ' + m('(20, 0)') + '.')].forEach((e, k) => g.appendChild(rv(e, k + 1)));
     root.appendChild(g);
     root.appendChild(rv(h('div.card.y', { style: 'margin-top:12px' }, h('div', { html: '<b>ועכשיו:</b> שאלה בסגנון מבחן. מקבלים רק את נתוני המשק, ובונים את טבלת הפתרון מאפס.' }), h('div', { style: 'margin-top:6px' }, h('span.chip', { role: 'button', style: 'cursor:pointer', onclick: () => { Deck.go('g5'); } }, 'לשאלה'))), 6));
   }
@@ -2405,7 +2567,7 @@ slide({
       if (k === 19) return '<b class="t">קו המגבלה של הלאפות</b>מחברים. שני הקווים חוצים זה את זה.';
       if (k === 20) return '<b class="t">נקודת המפגש</b>מסמנים את ' + m('B (50, 50)') + ', שמצאנו בחישוב.';
       if (k === 21) return '<b class="t">העקומה, קטע ראשון</b>מ-A עד B הקו הנמוך הוא קו האלומיניום. העקומה הולכת עליו.';
-      if (k >= 22) return '<b class="t">העקומה מוכנה</b>מ-B עד C הקו הנמוך הוא קו הלאפות. עקומת התמורה: ' + m('(0, 100) → (50, 50) → (75, 0)') + '. לחצו על קטע כדי לראות מי מגביל בו.';
+      if (k >= 22) return '<b class="t">העקומה מוכנה</b>מ-B עד C הקו הנמוך הוא קו הלאפות. עקומת התמורה: ' + m('(0, 100)') + ', אחריה ' + m('(50, 50)') + ', ובסוף ' + m('(75, 0)') + '. לחצו על קטע כדי לראות מי מגביל בו.';
       const key = Object.keys(D).find(x => D[x].from === k && D[x].ex);
       return key ? D[key].ex : '';
     };
@@ -2444,8 +2606,8 @@ function krCfg() {
   const pick = ks => Object.fromEntries(ks.map(a => [a, sol[a]]));
   const steps = [
     { cells: pick(vin), note: 'מסדרים את נתוני השאלה בטבלה: שורה לכל גורם ייצור. בעמודה B כמה יש ממנו במפעל, בעמודה C כמה דורשים אופניים (x), ובעמודה D כמה דורש קורקינט (y).' },
-    { cells: pick(['E2', 'E3']), note: 'Xmax לכל גורם: אם כל הגורם הולך לאופניים. הכמות במפעל חלקי מה שדורשים אופניים. בשורה 2 זה =B2/C2.' },
-    { cells: pick(['F2', 'F3']), note: 'Ymax לכל גורם: אם כל הגורם הולך לקורקינטים. הכמות במפעל חלקי מה שדורש קורקינט. בשורה 2 זה =B2/D2.' },
+    { cells: pick(['E2', 'E3']), note: 'Xmax לכל גורם: אם כל הגורם הולך לאופניים. הכמות במפעל חלקי מה שדורשים אופניים. בשורה 2 זה <span class="m">=B2/C2</span>.' },
+    { cells: pick(['F2', 'F3']), note: 'Ymax לכל גורם: אם כל הגורם הולך לקורקינטים. הכמות במפעל חלקי מה שדורש קורקינט. בשורה 2 זה <span class="m">=B2/D2</span>.' },
     { cells: pick(['G2', 'G3']), note: 'שיפוע כל קו מגבלה: Ymax חלקי Xmax. לפלדה 60 חלקי 40, כלומר 1.5. לשעות העבודה 40 חלקי 80, כלומר 0.5.' },
     { cells: pick(['B6']), note: 'נקודת המפגש: משווים בין שני הקווים, 60 − 1.5x = 40 − 0.5x. מעבירים אגפים: 20 = x. אפשר להקליד 20, או נוסחה: הפרש ה-Ymax חלקי הפרש השיפועים.' },
     { cells: pick(['C6']), note: 'מציבים את x באחד הקווים. בקו הפלדה: y = 60 − 1.5 × 20 = 30.' },
@@ -2462,7 +2624,7 @@ function krCfg() {
     C6: [['=F3-G2*B6', 'כאן ערבבתם בין שני הקווים. מציבים את x בקו אחד: ה-Ymax והשיפוע של אותו גורם.'], ['60', 'זה ה-Ymax של הפלדה. בנקודת המפגש x = 20, ולכן y = 60 − 1.5 × 20.'], ['40', 'זה ה-Ymax של שעות העבודה. בנקודת המפגש x = 20, ולכן y = 40 − 0.5 × 20.']],
     C9: [['=MAX(F2:F3)', 'זה ה-Ymax הגבוה. המפעל מוגבל בגורם שנגמר ראשון, ולכן לוקחים את הנמוך.'], ['60', 'הפלדה מספיקה ל-60 קורקינטים, אבל שעות העבודה מספיקות רק ל-40. הגורם שנגמר ראשון קובע.']],
     B11: [['=MAX(E2:E3)', 'זה ה-Xmax הגבוה. המפעל מוגבל בגורם שנגמר ראשון, ולכן לוקחים את הנמוך.'], ['80', 'שעות העבודה מספיקות ל-80 אופניים, אבל הפלדה מספיקה רק ל-40. הגורם שנגמר ראשון קובע.']] };
-  return { traps, rows: 11, cols: 7, widths: [104, 70, 84, 84, 58, 58, 60], data, solution: sol, targets: Object.keys(sol), vin, values: true, headRows: [1, 5, 8], steps, tools: false, tol: 0.011,
+  return { traps, rows: 11, cols: 7, widths: [150, 88, 112, 112, 92, 92, 92], data, solution: sol, targets: Object.keys(sol), vin, values: true, headRows: [1, 5, 8], steps, tools: false, tol: 0.011,
     hints: ['התחילו בסידור הנתונים: שורה 2 היא הפלדה, שורה 3 היא שעות העבודה.', 'Xmax של גורם: הכמות במפעל חלקי מה שדורשים אופניים. Ymax: חלקי מה שדורש קורקינט.', 'בנקודת המפגש שני הקווים נותנים אותו y: 60 − 1.5x = 40 − 0.5x.', 'בנקודות שעל הצירים לוקחים את הנמוך מבין השניים.'],
     wrongMsg: 'התוצאה אינה נכונה. לחצו על ״הצעד הבא״ כדי לראות את ההסבר לשלב הזה', done: 'הטבלה נכונה. עברו לשקף הבא ושרטטו ממנה את העקומה.' };
 }
@@ -2478,9 +2640,9 @@ slide({
     const fbBox = h('div.lvfb');
     const left = h('div.stack.l2-tight',
       h('div.card.l3-q.lvq', h('div.l3-src', 'נסו לבד, בגיליון'), h('div', KR.story), h('div', { style: 'margin-top:6px', html: '<b>נדרש:</b> בנו בגיליון את טבלת הפתרון, את נקודת המפגש ואת נקודות העקומה.' })),
-      h('div.card', { style: 'font-size:15px;line-height:1.5', html: '<b>איך עובדים:</b> לוחצים על תא ומקלידים. אפשר להקליד מספר, או נוסחה שמתחילה בסימן =, למשל ' + m('=B2/C2') + '. לחיצה כפולה עורכת תא. <b>בדיקה</b> מסמנת מה נכון ומה לא. <b>הצעד הבא</b> ממלא ומסביר שלב אחד.' }), fbBox);
+      fbBox);
     const host = h('div.xlhost');
-    root.appendChild(h('div.cols', left, host));
+    root.appendChild(h('div.cols', { style: 'grid-template-columns:minmax(0,.8fr) minmax(0,1.4fr)' }, left, host));
     const cfg = krCfg();
     cfg.onChange = () => { try { KR.raw = Object.assign({}, api.sheet.raw); if (host.dataset.solved === '1') KR.solved = true; } catch (e) { } };
     const api = window.__XL.mount(host, cfg);
@@ -2512,7 +2674,6 @@ slide({
       { t: m('45'), why: 'זה לפי קו הפלדה: ' + m('60 − 1.5 × 10') + '. אבל משמאל לנקודת המפגש קו הפלדה הוא הגבוה, ושעות העבודה לא מספיקות ל-45 קורקינטים.' },
       { t: m('30'), why: 'זה y בנקודת המפגש, שם ' + m('x = 20') + '. כאן ' + m('x = 10') + '.' }]), 9));
     right.appendChild(rv(L2.card('y', 'הצעד הבא', 'בקטע AB כל שעות העבודה בשימוש, אבל מהפלדה נשאר עודף. בקטע BC להפך. לגורם ייצור שנשאר ממנו עודף, אף שהמשק מייצר ביעילות, קוראים אבטלה מבנית. משם נמשיך.'), 10));
-    right.appendChild(rv(h('div', { style: 'display:flex;justify-content:center' }, memeCard('owl', 'שני קווים, עקומה אחת', 'תמיד הנמוך מבין השניים')), 10));
     root.appendChild(h('div.cols', left, right));
     const ch = PPC.chart(host, { w: 540, h: 350, xmax: 92, ymax: 68, xLabel: 'אופניים (x)', yLabel: 'קורקינטים (y)', ticksX: [], ticksY: [], grid: false, showTicks: false });
     const segSay = i => { exp.innerHTML = i === 0 ? '<b class="t">הקטע AB: שעות העבודה מגבילות</b>קו שעות העבודה הוא הנמוך. כל 80 השעות בשימוש. השיפוע 0.5: כל יחידת אופניים עולה חצי קורקינט.' : '<b class="t">הקטע BC: הפלדה מגבילה</b>קו הפלדה הוא הנמוך. כל 120 הק״ג בשימוש. השיפוע 1.5: כל יחידת אופניים עולה קורקינט וחצי.'; };
@@ -2524,11 +2685,11 @@ slide({
       '<b class="t">נקודת המפגש</b>' + m('B (20, 30)') + ', מהגיליון.',
       '<b class="t">העקומה, קטע ראשון</b>מ-' + m('A (0, 40)') + ' עד B: קו שעות העבודה הוא הנמוך.',
       '<b class="t">העקומה מוכנה</b>מ-B עד ' + m('C (40, 0)') + ': קו הפלדה הוא הנמוך. לחצו על קטע כדי לראות מי מגביל בו.',
-      '<b class="t">שאלה 1</b>בדקו את הצירוף מול כל אחד משני הגורמים.', '<b class="t">שאלה 2</b>קודם קבעו באיזה קטע של העקומה נמצא ' + m('x = 10') + '.', '<b class="t">לאן ממשיכים</b>העקומה בנויה. בשיעור הבא: מה קורה לגורם שלא מגביל.'];
+      '<b class="t">שאלה 1</b>בדקו את הצירוף מול כל אחד משני הגורמים.', '<b class="t">שאלה 2</b>קודם קבעו באיזה קטע של העקומה נמצא ' + m('x = 10') + '.', '<b class="t">לאן ממשיכים</b>העקומה בנויה. בשקפים הבאים: מה קורה לגורם שלא מגביל, וכמה ממנו נשאר בלי שימוש.'];
     function draw(k, anim) {
       conDraw(ch, E, { l1: k >= 2 ? 2 : k >= 1 ? 1 : 0, l2: k >= 4 ? 2 : k >= 3 ? 1 : 0, ix: k >= 5, p1: k >= 6, p2: k >= 7, dim: k >= 7, onSeg: segSay,
         anim: anim ? ({ 1: 'e1x', 2: 'l1', 3: 'e2x', 4: 'l2', 5: 'ix', 6: 'p1', 7: 'p2' })[k] || '' : '' });
-      if (k >= 8) ch.dot(30, 20, { cls: 'bad', r: 7, label: '(30, 20)', pos: 'ne', layer: 'ann' });
+      if (k >= 8) ptTip(ch, null, 30, 20, { cls: 'bad5', r: 8, label: '(30, 20)', pos: 'ne', title: '(30, 20): בלתי אפשרי', tip: 'הנקודה מתחת לקו שעות העבודה, אבל מעל קו הפלדה. פלדה: ' + m('3 × 30 + 2 × 20 = 130') + ' ק״ג, ויש רק 120. שעות: ' + m('30 + 2 × 20 = 70') + ', מתוך 80. מספיק שגורם אחד חסר.' });
       exp.innerHTML = says[Math.min(k, says.length - 1)];
     }
     draw(ctx.static ? 10 : 0, false);
@@ -2536,21 +2697,725 @@ slide({
   }
 });
 
+/* ===== lesson 5, part 2: structural unemployment and classifying points (משק ״נגב״: land 60, x 2, y 3; water 40, x 2, y 1) ===== */
+(function () {
+  const st = document.createElement('style');
+  st.textContent = `
+  .u5g .l5t td{height:31px;padding:3px 6px}.u5g .l5t th{padding:4px 6px}.u5g{display:grid;grid-template-columns:minmax(0,1.12fr) minmax(0,1fr);gap:14px;align-items:start}
+  .l5t td.f1c{color:#6d28d9}.l5t td.f2c{color:#b45309}
+  .l5t td.okc{color:var(--ok)}.l5t td.badc{color:var(--bad)}
+  .l5t td.idle{background:#fff1e6;color:#b45309}
+  .l5t th.f1{background:#6d28d9}.l5t th.f2{background:#b45309}
+  .l5t .m{font-size:17px}
+  .u5r{font-size:16.5px;line-height:1.5}
+  .ch .curve.ppcg.seg1{stroke:#6d28d9}.ch .curve.ppcg.seg2{stroke:#d97706}
+  .u2g{display:grid;grid-template-columns:minmax(0,.82fr) minmax(0,1.38fr);gap:14px;align-items:start}
+  .u2g .lvfb{font-size:15.5px}
+  .u3v{font-weight:800}
+  `;
+  document.head.appendChild(st);
+})();
+/* the three points of the Negev curve and what each factor uses there */
+const U5 = { P: [['A', 0, 20], ['C', 20, 0], ['B', 15, 10]] };
+const use5 = (f, x, y) => f.ax * x + f.ay * y;
+
+slide({
+  id: 'u1', kick: 'אבטלה מבנית', kc: 't', title: 'משק ״נגב״: מה קורה לקרקע ולמים בכל נקודה על העקומה?', steps: 11, tags: { ex: ['5.4', '5.6'] },
+  build(root, ctx) {
+    const q = qcard('ממשיכים במשק ״נגב״', 'לרשות המשק ' + m('60') + ' דונם קרקע ו-' + m('40') + ' יחידות מים. טון עגבניות (x) דורש ' + m('2') + ' דונם ו-' + m('2') + ' יחידות מים. טון חיטה (y) דורש ' + m('3') + ' דונם ויחידת מים אחת. עקומת התמורה: ' + m('A (0, 20)') + ', ' + m('B (15, 10)') + ', ' + m('C (20, 0)') + '. <b>המשק מייצר ביעילות. האם הוא משתמש בכל הקרקע ובכל המים?</b>');
+    const T = h('table.l5t');
+    T.appendChild(h('thead', h('tr', h('th', 'נקודה'), h('th', { html: 'עגבניות ' + m('x') }), h('th', { html: 'חיטה ' + m('y') }),
+      h('th.f1', { html: 'קרקע בשימוש<br>מתוך 60' }), h('th.f1', 'קרקע עודפת'), h('th.f2', { html: 'מים בשימוש<br>מתוך 40' }), h('th.f2', 'מים עודפים'))));
+    const tb = h('tbody'); T.appendChild(tb);
+    /* per point: step s = row appears, s+1 = land, s+2 = water */
+    const cells = [];
+    U5.P.forEach(([n, x, y], i) => {
+      const s = 1 + 3 * i, L = NG.F[0], W = NG.F[1], ul = use5(L, x, y), uw = use5(W, x, y);
+      const row = [[s, h('b', n), ''], [s, m(x), ''], [s, m(y), ''],
+        [s + 1, m('2 × ' + x + ' + 3 × ' + y + ' = ' + ul), 'f1c'], [s + 1, m(60 - ul), 60 - ul ? 'idle' : 'okc'],
+        [s + 2, m('2 × ' + x + ' + 1 × ' + y + ' = ' + uw), 'f2c'], [s + 2, m(40 - uw), 40 - uw ? 'idle' : 'okc']];
+      const tr = h('tr'); row.forEach(([st, v, c]) => { const td = h('td' + (c ? '.' + c : '')); tr.appendChild(td); cells.push([td, st, v]); }); tb.appendChild(tr);
+    });
+    const exp = h('div.wbx');
+    const rule = rv(L2.card('ac', 'הכלל', '<b>בקטע AB</b> הקרקע מגבילה, וממים נשאר עודף. <b>בקטע BC</b> המים מגבילים, ומהקרקע נשאר עודף. <b>רק בנקודת המפגש B</b> שני הגורמים מנוצלים עד הסוף.'), 10);
+    const def = rv(h('div', { style: 'margin-top:8px', html: '<b>השם: <t k="sunemp">אבטלה מבנית</t>.</b> המשק על העקומה, ובכל זאת נשאר עודף מגורם ייצור, כי הגורם האחר נגמר קודם. <b>גודל האבטלה המבנית</b> = הכמות במשק פחות הכמות בשימוש.' }), 11);
+    rule.appendChild(def);
+    const host = h('div');
+    root.appendChild(h('div.u5g', h('div.stack.l2-tight', q, T, exp), h('div.stack.l2-tight', host, h('div', ptKey([[PT_C.gold, 'נקודה על העקומה']])), rule)));
+    const ch = PPC.chart(host, { w: 560, h: 262, xmax: 33, ymax: 43, xLabel: 'עגבניות (x)', yLabel: 'חיטה (y)', ticksX: [], ticksY: [], grid: false, showTicks: false });
+    const tips = {
+      A: ['A (0, 20): רק חיטה', 'המשק מגדל 20 טון חיטה ולא עגבניות. קרקע: ' + m('3 × 20 = 60') + ', כל הקרקע בשימוש. מים: ' + m('1 × 20 = 20') + ' מתוך 40. <b>20 יחידות מים בלי שימוש.</b>'],
+      B: ['B (15, 10): נקודת המפגש', 'קרקע: ' + m('2 × 15 + 3 × 10 = 60') + '. מים: ' + m('2 × 15 + 10 = 40') + '. <b>שני הגורמים מנוצלים עד הסוף.</b> אין עודף.'],
+      C: ['C (20, 0): רק עגבניות', 'המשק מגדל 20 טון עגבניות ולא חיטה. מים: ' + m('2 × 20 = 40') + ', כל המים בשימוש. קרקע: ' + m('2 × 20 = 40') + ' מתוך 60. <b>20 דונם בלי שימוש.</b>'] };
+    const says = ['<b class="t">השאלה</b>המשק על העקומה, כלומר מייצר ביעילות. נבדוק בכל נקודה כמה קרקע וכמה מים בשימוש. מתחילים ב-A.',
+      '<b class="t">נקודה A</b>רק חיטה: 20 טון.', '<b class="t">A: קרקע</b>כל טון חיטה דורש 3 דונם: ' + m('3 × 20 = 60') + '. כל הקרקע בשימוש.',
+      '<b class="t">A: מים</b>כל טון חיטה דורש יחידת מים אחת: ' + m('1 × 20 = 20') + '. יש 40. <b>נשארו 20 יחידות מים בלי שימוש</b>, אף שהמשק על העקומה.',
+      '<b class="t">נקודה C</b>רק עגבניות: 20 טון.', '<b class="t">C: קרקע</b>' + m('2 × 20 = 40') + ' דונם מתוך 60. <b>נשארו 20 דונם.</b>',
+      '<b class="t">C: מים</b>' + m('2 × 20 = 40') + '. כל המים בשימוש. כאן המים נגמרו ראשונים.',
+      '<b class="t">נקודה B</b>נקודת המפגש: 15 טון עגבניות ו-10 טון חיטה.', '<b class="t">B: קרקע</b>' + m('2 × 15 + 3 × 10 = 60') + '. כל הקרקע.',
+      '<b class="t">B: מים</b>' + m('2 × 15 + 1 × 10 = 40') + '. כל המים. רק כאן אין עודף משום גורם.',
+      '<b class="t">הכלל</b>בכל קטע, הקו הנמוך הוא הגורם שמגביל. מהגורם השני נשאר עודף.',
+      '<b class="t">השם</b>עודף של גורם ייצור כשהמשק על העקומה: אבטלה מבנית. לחצו על כל נקודה בגרף כדי לראות את החישוב שלה.'];
+    function draw(k, anim) {
+      host.querySelectorAll('.pttip').forEach(e => e.remove());
+      ['curve', 'pts', 'ann'].forEach(z => ch.clear(z));
+      cells.forEach(([td, s, v]) => { const on = k >= s; td.innerHTML = on ? (typeof v === 'string' ? v : '') : ''; if (on && typeof v !== 'string') td.appendChild(v.cloneNode(true)); td.classList.toggle('new', on && k === s); });
+      ch.curve([[0, 20], [30, 0]], { cls: 'cl1 dim' }); ch.curve([[0, 40], [20, 0]], { cls: 'cl2 dim' });
+      ch.text(27, 4.2, 'קו הקרקע', 'lbl1', 'start'); ch.text(3.2, 37, 'קו המים', 'lbl2', 'start');
+      const seg = k >= 10;
+      ch.curve([[0, 20], [15, 10]], { cls: 'ppcg' + (seg ? ' seg1' : '') }); ch.curve([[15, 10], [20, 0]], { cls: 'ppcg' + (seg ? ' seg2' : '') });
+      if (seg) { ch.text(7.5, 18.3, 'הקרקע מגבילה', 'lbl1', 'start'); ch.text(18.4, 8.6, 'המים מגבילים', 'lbl2', 'start'); }
+      const on = { A: k >= 1, C: k >= 4, B: k >= 7 };
+      [['A', 0, 20, 'n'], ['B', 15, 10, 'n'], ['C', 20, 0, 'n']].forEach(([n, x, y, pos]) => {
+        if (!on[n]) return;
+        const g = ptTip(ch, host, x, y, { cls: 'gold', label: n + ' (' + x + ', ' + y + ')', pos, title: tips[n][0], tip: tips[n][1], pop: anim && (k === { A: 1, C: 4, B: 7 }[n]) });
+      });
+      exp.innerHTML = says[Math.min(k, says.length - 1)];
+    }
+    draw(ctx.static ? 11 : 0, false);
+    ctx.onStep((k, dir, init) => draw(k, !init && dir > 0));
+  }
+});
+
+/* ----- u2: live sheet, a new economy ----- */
+const AR = { raw: null, solved: false,
+  story: 'מפעל ״ארבל״ מייצר שולחנות (x) וכיסאות (y). לרשות המפעל ' + m('120') + ' יחידות עץ ו-' + m('120') + ' שעות עבודה ביום. שולחן דורש ' + m('4') + ' יחידות עץ ו-' + m('2') + ' שעות עבודה. כיסא דורש ' + m('2') + ' יחידות עץ ו-' + m('4') + ' שעות עבודה. עקומת התמורה עוברת בנקודות ' + m('A (0, 30)') + ', ' + m('D (10, 25)') + ', ' + m('B (20, 20)') + ' ו-' + m('C (30, 0)') + '.' };
+function arCfg() {
+  const data = { A1: 'גורם ייצור', B1: 'כמות', C1: 'לשולחן', D1: 'לכיסא', A2: 'עץ', A3: 'שעות עבודה',
+    A5: 'נקודה', B5: 'x', C5: 'y', D5: 'עץ בשימוש', E5: 'עץ עודף', F5: 'שעות בשימוש', G5: 'שעות עודפות', A6: 'A', A7: 'D', A8: 'B', A9: 'C' };
+  const sol = { B2: '120', C2: '4', D2: '2', B3: '120', C3: '2', D3: '4', B6: '0', C6: '30', B7: '10', C7: '25', B8: '20', C8: '20', B9: '30', C9: '0' };
+  [6, 7, 8, 9].forEach(r => { sol['D' + r] = '=C$2*B' + r + '+D$2*C' + r; sol['E' + r] = '=B$2-D' + r; sol['F' + r] = '=C$3*B' + r + '+D$3*C' + r; sol['G' + r] = '=B$3-F' + r; });
+  const vin = ['B2', 'C2', 'D2', 'B3', 'C3', 'D3'], pts = ['B6', 'C6', 'B7', 'C7', 'B8', 'C8', 'B9', 'C9'];
+  const pick = ks => Object.fromEntries(ks.map(a => [a, sol[a]]));
+  const col = c => [6, 7, 8, 9].map(r => c + r);
+  const steps = [
+    { cells: pick(vin), note: 'מסדרים את נתוני השאלה: שורה לכל גורם ייצור. בעמודה B כמה יש ממנו, בעמודה C כמה דורש שולחן, ובעמודה D כמה דורש כיסא.' },
+    { cells: pick(pts), note: 'רושמים את ארבע הנקודות על העקומה: כמה שולחנות (x) וכמה כיסאות (y) בכל אחת.' },
+    { cells: pick(['D6']), note: 'עץ בשימוש בנקודה A: עץ לשולחן כפול מספר השולחנות, ועוד עץ לכיסא כפול מספר הכיסאות. ' + m('4 × 0 + 2 × 30 = 60') + '. בנוסחה: ' + m('=C$2*B6+D$2*C6') + '. הדולר נועל את שורה 2 כשגוררים למטה.' },
+    { cells: pick(col('D').slice(1)), note: 'גוררים את הנוסחה למטה לשאר הנקודות. בנקודה D: ' + m('4 × 10 + 2 × 25 = 90') + '.' },
+    { cells: pick(col('E')), note: 'עץ עודף: הכמות במפעל פחות הכמות בשימוש. בנקודה A: ' + m('120 − 60 = 60') + '. בנוסחה: ' + m('=B$2-D6') + '.' },
+    { cells: pick(col('F')), note: 'שעות בשימוש: שעות לשולחן כפול שולחנות, ועוד שעות לכיסא כפול כיסאות. בנקודה A: ' + m('2 × 0 + 4 × 30 = 120') + '. בנוסחה: ' + m('=C$3*B6+D$3*C6') + '.' },
+    { cells: pick(col('G')), note: 'שעות עודפות: ' + m('120') + ' פחות השעות בשימוש. עכשיו קוראים את הטבלה: ב-A וב-D נשאר עץ (השעות מגבילות), ב-C נשארו שעות (העץ מגביל), וב-B אין עודף.' }];
+  const traps = {
+    D6: [['=C2*C6+D2*B6', 'החלפתם בין x ל-y. עץ לשולחן כופלים במספר השולחנות (x), ועץ לכיסא במספר הכיסאות (y).'], ['120', 'זו כל כמות העץ במפעל. כאן מחשבים כמה עץ בשימוש בנקודה A.']],
+    E6: [['=D6-B6', 'עודף הוא מה שנשאר: הכמות במפעל פחות הכמות בשימוש.']],
+    F6: [['=C$2*B6+D$2*C6', 'זו נוסחת העץ. לשעות העבודה לוקחים את שורה 3.']] };
+  return { traps, rows: 9, cols: 7, widths: [92, 58, 66, 62, 86, 82, 96], data, solution: sol, targets: Object.keys(sol), vin, values: true, headRows: [1, 5], steps, tools: false, tol: 0.011,
+    hints: ['התחילו בנתונים: שורה 2 היא העץ, שורה 3 היא שעות העבודה.', 'כמות בשימוש = דרישה ליחידת x כפול x, ועוד דרישה ליחידת y כפול y.', 'עודף = הכמות במפעל פחות הכמות בשימוש.'],
+    wrongMsg: 'התוצאה אינה נכונה. לחצו על ״הצעד הבא״ כדי לראות את ההסבר לשלב הזה', done: 'הטבלה נכונה. בכל נקודה על העקומה נשאר עודף לכל היותר מגורם אחד, חוץ מנקודת המפגש B.' };
+}
+slide({
+  id: 'u2', kick: 'עכשיו אתם', kc: 'y', title: 'מפעל ״ארבל״: מחשבים אבטלה מבנית בגיליון', steps: 0, tags: { ex: ['5.6'] },
+  build(root, ctx) {
+    const qtxt = AR.story + '<div style="margin-top:6px"><b>נדרש:</b> בכל אחת מארבע הנקודות חשבו כמה עץ וכמה שעות עבודה בשימוש, וכמה נשאר מכל גורם. איזה גורם באבטלה מבנית בכל נקודה, ומה גודלה?</div>';
+    const dt = L2.tbl(['גורם ייצור', 'כמות', 'לשולחן x', 'לכיסא y'], [['עץ', m('120'), m('4'), m('2')], ['שעות עבודה', m('120'), m('2'), m('4')]]);
+    if (ctx.static) {
+      root.appendChild(h('div.u2g', h('div.stack', qcard('נסו לבד, בגיליון', qtxt), dt),
+        h('div.stack', L2.tbl(['נקודה', 'x', 'y', 'עץ בשימוש', 'עץ עודף', 'שעות בשימוש', 'שעות עודפות'],
+          [['A', 0, 30], ['D', 10, 25], ['B', 20, 20], ['C', 30, 0]].map(([n, x, y]) => { const w = 4 * x + 2 * y, l = 2 * x + 4 * y; return [n, m(x), m(y), m(w), m(120 - w), m(l), m(120 - l)]; })))));
+      return;
+    }
+    const fbBox = h('div.lvfb');
+    const left = h('div.stack.l2-tight', qcard('נסו לבד, בגיליון', qtxt), dt, fbBox);
+    const host = h('div.xlhost');
+    root.appendChild(h('div.u2g', left, host));
+    const cfg = arCfg();
+    cfg.onChange = () => { try { AR.raw = Object.assign({}, api.sheet.raw); if (host.dataset.solved === '1') AR.solved = true; } catch (e) { } };
+    const api = window.__XL.mount(host, cfg);
+    host.addEventListener('keydown', ev => ev.stopPropagation());
+    const fb = host.querySelector('.xl-fb'); if (fb) fbBox.appendChild(fb);
+    if (AR.raw) { const o = {}; cfg.targets.forEach(a => { if (AR.raw[a] != null) o[a] = AR.raw[a]; }); api.putMany(o); }
+    host.__api = api;
+  }
+});
+
+/* ----- u3: three kinds of points ----- */
+slide({
+  id: 'u3', kick: 'סיווג נקודות', kc: 'p', title: 'משק ״נגב״: על העקומה, מתחתיה, או מחוץ לה?', steps: 13, tags: { ex: ['5.4'] },
+  build(root, ctx) {
+    const q = qcard('אותו משק, שש נקודות', 'קרקע: ' + m('60') + ' דונם, ' + m('2x + 3y') + ' בשימוש. מים: ' + m('40') + ' יחידות, ' + m('2x + y') + ' בשימוש. <b>לכל נקודה: האם היא אפשרית? אם כן, האם יעילה? מה קורה בה לכל גורם?</b>');
+    /* [name, x, y, kind, verdict, tip] */
+    const P = [['P', 15, 10, 'ok5', 'יעילה, אין עודף', 'שני הגורמים מנוצלים עד הסוף. זו נקודת המפגש, על העקומה.'],
+      ['Q', 6, 16, 'ok5', 'יעילה, 12 מים עודפים', 'על העקומה, בקטע שבו הקרקע מגבילה. כל הקרקע בשימוש, ומהמים נשארו 12: אבטלה מבנית של מים.'],
+      ['R', 8, 6, 'in5', 'לא יעילה, עודף משני הגורמים', 'מתחת לשני הקווים. נשארו גם קרקע וגם מים. אפשר לייצר יותר משני המוצרים: המשק לא מנצל את המשאבים שלו.'],
+      ['S', 18, 6, 'bad5', 'בלתי אפשרית: חסרים מים', 'מתחת לקו הקרקע, אבל מעל קו המים. קרקע יש מספיק (54 מתוך 60), אבל צריך 42 יחידות מים ויש רק 40. מספיק שגורם אחד חסר, והנקודה בלתי אפשרית.'],
+      ['T', 6, 22, 'bad5', 'בלתי אפשרית: חסרה קרקע', 'מתחת לקו המים, אבל מעל קו הקרקע. מים יש מספיק (34 מתוך 40), אבל צריך 78 דונם ויש רק 60.'],
+      ['U', 20, 15, 'bad5', 'בלתי אפשרית: חסרים שני הגורמים', 'מעל שני הקווים. צריך 85 דונם ו-55 יחידות מים. אין מספיק מאף אחד מהם.']];
+    const T = h('table.l5t');
+    T.appendChild(h('thead', h('tr', h('th', 'נקודה'), h('th', { html: m('(x, y)') }), h('th.f1', { html: 'קרקע ' + m('2x + 3y') + '<br>יש 60' }), h('th.f2', { html: 'מים ' + m('2x + y') + '<br>יש 40' }), h('th', 'מסקנה'))));
+    const tb = h('tbody'); T.appendChild(tb); const cells = [];
+    P.forEach(([n, x, y, kind, verdict], i) => {
+      const s = 1 + 2 * i, ul = 2 * x + 3 * y, uw = 2 * x + y;
+      const row = [[s, '<b>' + n + '</b>', ''], [s, m('(' + x + ', ' + y + ')'), ''], [s, m(ul) + (ul <= 60 ? ' ✓' : ' ✗'), ul <= 60 ? 'okc' : 'badc'],
+        [s + 1, m(uw) + (uw <= 40 ? ' ✓' : ' ✗'), uw <= 40 ? 'okc' : 'badc'], [s + 1, verdict, 'u3v ' + (kind === 'ok5' ? 'okc' : kind === 'bad5' ? 'badc' : '')]];
+      const tr = h('tr'); row.forEach(([st, v, c]) => { const td = h('td' + (c ? '.' + c.split(' ').join('.') : '')); tr.appendChild(td); cells.push([td, st, v]); }); tb.appendChild(tr);
+    });
+    const rule = rv(L2.card('ac', 'שלושה סוגים של נקודות', '<b style="color:#16a34a">על העקומה:</b> יעילה. ייתכן עודף מגורם אחד: אבטלה מבנית. <b style="color:#2563eb">מתחת לעקומה:</b> אפשרית אבל לא יעילה. <b style="color:#dc2626">מעל העקומה:</b> בלתי אפשרית. גם נקודה שנמצאת בין שני הקווים, מתחת לאחד ומעל השני, בלתי אפשרית: אחד הגורמים חסר.'), 13);
+    const host = h('div');
+    root.appendChild(h('div.u5g', h('div.stack.l2-tight', q, T), h('div.stack.l2-tight', host, ptKey([[PT_C.ok5, 'על העקומה'], [PT_C.in5, 'מתחת לעקומה'], [PT_C.bad5, 'מחוץ לעקומה']]), rule)));
+    const ch = PPC.chart(host, { w: 560, h: 245, xmax: 33, ymax: 43, xLabel: 'עגבניות (x)', yLabel: 'חיטה (y)', ticksX: [], ticksY: [], grid: false, showTicks: false });
+    function draw(k, anim) {
+      host.querySelectorAll('.pttip').forEach(e => e.remove());
+      ['curve', 'pts', 'ann'].forEach(z => ch.clear(z));
+      cells.forEach(([td, s, v]) => { const on = k >= s; td.innerHTML = on ? v : ''; td.classList.toggle('new', on && k === s); });
+      ch.curve([[0, 20], [30, 0]], { cls: 'cl1' }); ch.curve([[0, 40], [20, 0]], { cls: 'cl2' });
+      ch.text(24, 6.2, 'קו הקרקע', 'lbl1', 'start'); ch.text(3.2, 37, 'קו המים', 'lbl2', 'start');
+      ch.curve([[0, 20], [15, 10], [20, 0]], { cls: 'ppcg' }); ch.text(1, 23.4, 'העקומה', 'lblg', 'start');
+      [20, 40].forEach(v => ctick(ch, 'y', v)); [20, 30].forEach(v => ctick(ch, 'x', v));
+      P.forEach(([n, x, y, kind, verdict, tip], i) => {
+        const s = 1 + 2 * i; if (k < s) return;
+        ptTip(ch, host, x, y, { cls: kind, label: n + ' (' + x + ', ' + y + ')', pos: { P: 'n', Q: 'se', R: 'sw', S: 'se', T: 'e', U: 'ne' }[n], title: n + ': ' + verdict, tip, pop: anim && k === s });
+      });
+    }
+    draw(ctx.static ? 13 : 0, false);
+    ctx.onStep((k, dir, init) => draw(k, !init && dir > 0));
+  }
+});
+
+/* ===== lesson 5, more on constraints: marginal cost on a curve built from constraints (m1), three factors (m2),
+   special cases: parallel lines and a line that never binds (m3), live sheet with three factors (m4) ===== */
+(function () {
+  const st = document.createElement('style');
+  st.textContent = `
+  .ch .curve.cl3{stroke:#0891b2;stroke-width:3.4}
+  .ch text.lbl3{fill:#0891b2;font-weight:800;font-size:14px}
+  .ch .pt.c3{fill:#0891b2}
+  .f3c{color:#0e7490;font-weight:800}
+  .ch .curve.seghl5{stroke:#f59e0b;stroke-width:13;opacity:.45}
+  .m5w{display:grid;grid-template-columns:minmax(0,.78fr) minmax(0,1.35fr) minmax(0,1.05fr);gap:12px;align-items:start}
+  .m5w .wbt{width:100%}
+  .m5w .l3-q{font-size:15.5px;line-height:1.45}
+  .m5w .wbx{min-height:70px;font-size:15.5px;line-height:1.45}
+  .m5w .wbt td{height:34px}.m5w .wbh{margin:6px 0 3px}
+  .m5w .wbx b.t{display:block}
+  .m5rule{background:#ecfdf5;border-right:4px solid #16a34a;border-radius:8px;padding:7px 10px;font-size:15.5px;line-height:1.45;margin-top:8px}
+  .m4w{display:grid;grid-template-columns:minmax(0,.82fr) minmax(0,1.25fr);gap:14px;align-items:start}
+  .m4w .xlhost{min-width:0}
+  `;
+  document.head.appendChild(st);
+})();
+
+/* draws constraint lines. L = [{X, Y, cls:1|2|3, lab:[x,y], name}], s = {lines: n drawn, ends: n with end ticks, curve: [[x,y]...] points drawn so far, anim, dim} */
+function m5Lines(ch, L, s) {
+  ['curve', 'pts', 'ann'].forEach(c => ch.clear(c));
+  L.forEach((f, i) => {
+    if (i < (s.ends || 0)) {
+      ctick(ch, 'x', f.X, 'lbl' + f.cls); ctick(ch, 'y', f.Y, 'lbl' + f.cls);
+      ch.dot(f.X, 0, { cls: 'c' + f.cls, r: 6, pop: s.anim === 'e' + i }); ch.dot(0, f.Y, { cls: 'c' + f.cls, r: 6, pop: s.anim === 'e' + i });
+    }
+    if (i < (s.lines || 0)) {
+      ch.curve([[0, f.Y], [f.X, 0]], { cls: 'cl' + f.cls + (s.dim ? ' dim' : ''), animate: s.anim === 'l' + i, dur: 0.9 });
+      if (!s.nolab) ch.text(f.lab[0], f.lab[1], 'קו ה' + f.name, 'lbl' + f.cls, 'start');
+    }
+  });
+  if (s.curve && s.curve.length > 1) for (let i = 0; i + 1 < s.curve.length; i++) ch.curve([s.curve[i], s.curve[i + 1]], { cls: 'ppcg', animate: s.anim === 'p' + i, dur: 0.8 });
+}
+const m5r = v => (Math.round(v * 100) / 100).toString();
+
+/* a three-column worked slide: question, tables filled click by click (values fly in), chart + explanation.
+   o: id, kick, title, q (html), tables [{title, head, rows: [[key|'label'...]]}], D: key -> {s, v, ex, src}, n, say(k), draw(ch, k, anim, api), chart opts, stages [[name, from, to]] */
+function m5Worked(o) {
+  slide({
+    id: o.id, kick: o.kick, kc: 'p', title: o.title, steps: o.n, tags: o.tags,
+    build(root, ctx) {
+      const C = {}, D = o.D;
+      const strip = h('div.stg');
+      const sb = (o.stages || []).map((s, i) => { const b = h('button', { type: 'button' }, (i + 1) + '. ' + s[0]); b.addEventListener('click', () => jumpStep(s[1])); strip.appendChild(b); return b; });
+      const mid = h('div');
+      o.tables.forEach(t => {
+        if (t.title) mid.appendChild(h('div.wbh', t.title));
+        const T = h('table.wbt'); T.appendChild(h('thead', h('tr', t.head.map(x => h('th', { html: x })))));
+        const tb = h('tbody'); T.appendChild(tb);
+        t.rows.forEach(r => { const tr = h('tr'); r.forEach(c => { const td = h('td'); if (D[c]) C[c] = td; else td.innerHTML = c; tr.appendChild(td); }); tb.appendChild(tr); });
+        mid.appendChild(T);
+      });
+      const exp = h('div.wbx');
+      const host = h('div');
+      const right = h('div.stack.l2-tight', host, h('div.wbh', 'איך חושב? לחצו על תא בטבלה או על נקודה בגרף'), exp);
+      const leftCol = h('div.stack.l2-tight', h('div.card.l3-q', h('div.l3-src', o.src || 'שאלה'), h('div', { html: o.q })));
+      if (o.after) o.after.forEach(a => leftCol.appendChild(rv(a[0](ctx), a[1])));
+      if (o.stages) root.appendChild(strip);
+      root.appendChild(h('div.m5w', leftCol, mid, right));
+      const ch = PPC.chart(host, Object.assign({ w: 430, h: 262, ticksX: [], ticksY: [], grid: false, showTicks: false }, o.chart));
+      let K = 0, picked = null;
+      function paint() {
+        Object.keys(C).forEach(key => {
+          const d = D[key], td = C[key]; const on = K >= d.s;
+          td.innerHTML = on ? d.v : '';
+          td.className = (on && d.ex ? 'c' : '') + (on && d.s === K ? ' new' : '') + (picked === key ? ' sel' : '') + (picked && (D[picked].src || []).includes(key) ? ' src' : '');
+        });
+      }
+      Object.keys(C).forEach(key => C[key].addEventListener('click', () => { const d = D[key]; if (!d.ex || K < d.s) return; picked = key; paint(); exp.innerHTML = d.ex; }));
+      function draw(k, anim) {
+        K = k; picked = null; paint();
+        (o.stages || []).forEach((s, i) => { sb[i].className = k >= s[1] && k <= s[2] ? 'on' : k > s[2] ? 'done' : ''; });
+        o.draw(ch, k, anim, host);
+        exp.innerHTML = o.say(k) || (() => { const key = Object.keys(D).find(x => D[x].s === k && D[x].ex); return key ? D[key].ex : ''; })();
+      }
+      draw(ctx.static ? o.n : 0, false);
+      ctx.onStep((k, dir, init) => draw(k, !init && dir > 0));
+    }
+  });
+}
+
+/* ---------------- m1: marginal cost on a curve built from constraints ---------------- */
+(function () {
+  const E = conEco({ F: [{ name: 'קמח', q: 120, ax: 2, ay: 3 }, { name: 'שעות תנור', q: 80, ax: 2, ay: 1 }] });
+  /* flour: X 60, Y 40, slope 2/3. Oven: X 40, Y 80, slope 2. Meeting (30, 20). Curve (0, 40) → (30, 20) → (40, 0) */
+  const L = [{ X: 60, Y: 40, cls: 1, lab: [46, 13], name: 'קמח' }, { X: 40, Y: 80, cls: 2, lab: [6, 68], name: 'תנור' }];
+  const D = {};
+  const put = (k, s, v, ex, src) => { D[k] = { s, v, ex, src }; };
+  put('n0', 1, '<b class="f1c">קמח</b>'); put('n1', 1, '<b class="f2c">שעות תנור</b>');
+  put('q0', 1, m('120'), '<b class="t">נתון</b>במאפייה 120 ק״ג קמח.'); put('q1', 1, m('80'), '<b class="t">נתון</b>במאפייה 80 שעות תנור.');
+  put('ax0', 1, m('2'), '<b class="t">נתון</b>כיכר לחם דורשת 2 ק״ג קמח.'); put('ay0', 1, m('3'), '<b class="t">נתון</b>עוגה דורשת 3 ק״ג קמח.');
+  put('ax1', 1, m('2'), '<b class="t">נתון</b>כיכר לחם דורשת 2 שעות תנור.'); put('ay1', 1, m('1'), '<b class="t">נתון</b>עוגה דורשת שעת תנור אחת.');
+  put('X0', 2, m('60'), '<b class="t">Xmax לפי הקמח</b>' + m('120 / 2 = 60') + ' כיכרות, אם כל הקמח הולך ללחם.', ['q0', 'ax0']);
+  put('Y0', 2, m('40'), '<b class="t">Ymax לפי הקמח</b>' + m('120 / 3 = 40') + ' עוגות, אם כל הקמח הולך לעוגות.', ['q0', 'ay0']);
+  put('X1', 3, m('40'), '<b class="t">Xmax לפי התנור</b>' + m('80 / 2 = 40') + ' כיכרות.', ['q1', 'ax1']);
+  put('Y1', 3, m('80'), '<b class="t">Ymax לפי התנור</b>' + m('80 / 1 = 80') + ' עוגות.', ['q1', 'ay1']);
+  put('pA', 4, m('(0, 40)'), '<b class="t">נקודה A, על ציר y</b>הקמח מספיק ל-40 עוגות והתנור ל-80. הגורם שנגמר ראשון קובע: 40.', ['Y0', 'Y1']);
+  put('pC', 4, m('(40, 0)'), '<b class="t">נקודה C, על ציר x</b>הקמח מספיק ל-60 כיכרות והתנור ל-40. קובע הנמוך: 40.', ['X0', 'X1']);
+  put('pB', 5, m('(30, 20)'), '<b class="t">נקודה B, המפגש</b>' + m('40 − 0.67x = 80 − 2x') + ', ולכן ' + m('x = 30') + ' ו-' + m('y = 20') + '.', ['X0', 'Y0', 'X1', 'Y1']);
+  put('bAB', 6, '<b class="f1c">קמח</b>', '<b class="t">מי מגביל בקטע AB?</b>בקטע AB קו הקמח הוא הנמוך. כל הקמח בשימוש, ומהתנור נשאר עודף.', ['pA', 'pB']);
+  put('xAB', 7, m('0.67'), '<b class="t">עלות שולית של כיכר לחם בקטע AB</b>הקמח מגביל. כיכר לחם דורשת 2 ק״ג קמח, ועוגה 3. כדי לאפות עוד כיכר צריך לפנות 2 ק״ג קמח, כלומר לוותר על ' + m('2 / 3 ≈ 0.67') + ' עוגה. זה גם השיפוע של קו הקמח: ' + m('40 / 60 ≈ 0.67') + '.', ['ax0', 'ay0']);
+  put('yAB', 8, m('1.5'), '<b class="t">עלות שולית של עוגה בקטע AB</b>ההופכי: ' + m('3 / 2 = 1.5') + ' כיכרות לעוגה.', ['xAB']);
+  put('bBC', 9, '<b class="f2c">שעות תנור</b>', '<b class="t">מי מגביל בקטע BC?</b>בקטע BC קו התנור הוא הנמוך. כל שעות התנור בשימוש, ומהקמח נשאר עודף.', ['pB', 'pC']);
+  put('xBC', 10, m('2'), '<b class="t">עלות שולית של כיכר לחם בקטע BC</b>התנור מגביל. כיכר דורשת 2 שעות תנור ועוגה שעה אחת: ' + m('2 / 1 = 2') + ' עוגות לכיכר. השיפוע של קו התנור: ' + m('80 / 40 = 2') + '.', ['ax1', 'ay1']);
+  put('yBC', 11, m('0.5'), '<b class="t">עלות שולית של עוגה בקטע BC</b>ההופכי: ' + m('1 / 2 = 0.5') + ' כיכר לעוגה.', ['xBC']);
+  put('xB', 12, m('0.67'), '<b class="t">הכיכר ה-30, בנקודה B</b>הכיכר ה-30 היא המעבר מ-29 ל-30 כיכרות. המעבר הזה בקטע שמשמאל ל-B, הקטע AB. לכן ' + m('MC(x) ≈ 0.67') + '.', ['xAB']);
+  put('yB', 13, m('0.5'), '<b class="t">העוגה ה-20, בנקודה B</b>העוגה ה-20 היא המעבר מ-19 ל-20 עוגות. עם 19 עוגות המשק מימין ל-B, בקטע BC. לכן ' + m('MC(y) = 0.5') + '.', ['yBC']);
+  const SAY = {
+    0: '<b class="t">מתחילים</b>השאלה מימין. הטבלאות ריקות. כל לחיצה מוסיפה פריט אחד.',
+    1: '<b class="t">שלב 1: הנתונים בטבלה</b>שורה לכל גורם ייצור: כמה יש ממנו, וכמה ממנו דורש כל מוצר.',
+    6: '<b class="t">מי מגביל בקטע AB?</b>בקטע AB קו הקמח הוא הנמוך. כל הקמח בשימוש, ומהתנור נשאר עודף. לכן העלות השולית נקבעת לפי הקמח.',
+    9: '<b class="t">מי מגביל בקטע BC?</b>בקטע BC קו התנור הוא הנמוך. כל שעות התנור בשימוש. העלות השולית נקבעת לפי התנור.'
+  };
+  m5Worked({
+    id: 'm1', kick: 'עלות שולית על עקומה מקווי מגבלה', title: 'מאפיית ״גליל״: כמה עולה עוד כיכר לחם?', n: 13, src: 'שאלה בסגנון מבחן', tags: { ex: ['5.5'] },
+    q: 'מאפיית ״גליל״ אופה כיכרות לחם (' + m('x') + ') ועוגות (' + m('y') + ').<br>לרשות המאפייה 120 ק״ג קמח ו-80 שעות תנור.<br>כיכר לחם דורשת 2 ק״ג קמח ו-2 שעות תנור.<br>עוגה דורשת 3 ק״ג קמח ושעת תנור אחת.'
+      + '<div style="margin-top:6px"><b>נדרש:</b></div><ol style="margin:2px 18px 0 0;padding:0"><li>בנו את עקומת התמורה.</li><li>מהי העלות השולית של כיכר ושל עוגה בכל קטע?</li><li>מהי העלות השולית של הכיכר ה-30 ושל העוגה ה-20?</li></ol>',
+    stages: [['הנתונים', 1, 1], ['Xmax ו-Ymax', 2, 3], ['נקודות העקומה', 4, 5], ['קטע AB', 6, 8], ['קטע BC', 9, 11], ['בנקודה B', 12, 13]],
+    tables: [
+      { head: ['גורם', 'כמות', 'לכיכר ' + m('x'), 'לעוגה ' + m('y'), m('Xmax'), m('Ymax')], rows: [['n0', 'q0', 'ax0', 'ay0', 'X0', 'Y0'], ['n1', 'q1', 'ax1', 'ay1', 'X1', 'Y1']] },
+      { title: 'נקודות העקומה', head: ['A', 'B (המפגש)', 'C'], rows: [['pA', 'pB', 'pC']] },
+      { title: 'עלות שולית בכל קטע', head: ['קטע', 'מי מגביל', m('MC(x)'), m('MC(y)')], rows: [['<b>AB</b>', 'bAB', 'xAB', 'yAB'], ['<b>BC</b>', 'bBC', 'xBC', 'yBC'], ['<b>בנקודה B</b>', '<span style="font-size:13px">כיכר 30, עוגה 20</span>', 'xB', 'yB']] }],
+    D, chart: { xmax: 66, ymax: 88, xLabel: 'כיכרות לחם (x)', yLabel: 'עוגות (y)' },
+    after: [[() => h('div.m5rule', { html: '<b>הכלל:</b> בכל קטע העלות השולית של ' + m('x') + ' היא היחס בין מה ש-' + m('x') + ' ו-' + m('y') + ' דורשים מהגורם המגביל (' + m('ax / ay') + '), וזה שיפוע הקו המגביל. ' + m('MC(y)') + ' היא ההופכי. בנקודת השבר: ' + m('x') + ' לפי הקטע שמשמאל, ' + m('y') + ' לפי הקטע שמימין.' }), 13]],
+    say: k => SAY[k],
+    draw(ch, k, anim, host) {
+      const P = E.P;
+      m5Lines(ch, L, { ends: k >= 3 ? 2 : k >= 2 ? 1 : 0, lines: k >= 3 ? 2 : k >= 2 ? 1 : 0, curve: k >= 5 ? P : k >= 4 ? [] : [], dim: k >= 5, anim: anim ? ({ 2: 'l0', 3: 'l1', 5: 'p0' })[k] : '' });
+      if (k >= 6 && k <= 8) ch.curve([P[0], P[1]], { cls: 'seghl5' });
+      if (k >= 9 && k <= 11) ch.curve([P[1], P[2]], { cls: 'seghl5' });
+      if (k >= 4) {
+        ptTip(ch, host, 0, 40, { cls: 'ok5', label: 'A (0, 40)', pos: 'e', title: 'נקודה A: רק עוגות', tip: 'המאפייה אופה רק עוגות: 40. הקמח נגמר (40 עוגות × 3 ק״ג = 120). מהתנור נשארות 40 שעות פנויות.' });
+        ptTip(ch, host, 40, 0, { cls: 'ok5', label: 'C (40, 0)', pos: 'n', title: 'נקודה C: רק לחם', tip: 'המאפייה אופה רק לחם: 40 כיכרות. שעות התנור נגמרות (40 × 2 = 80). מהקמח נשארים 40 ק״ג.' });
+      }
+      if (k >= 5) ptTip(ch, host, 30, 20, { cls: 'gold', label: 'B (30, 20)', pos: 'ne', title: 'נקודה B: המפגש', tip: 'כאן שני הגורמים מנוצלים עד הסוף: קמח ' + m('2 × 30 + 3 × 20 = 120') + ', תנור ' + m('2 × 30 + 1 × 20 = 80') + '. משמאל לה הקמח מגביל, מימין לה התנור.' });
+    }
+  });
+})();
+
+/* ---------------- m2: three factors of production (exam style) ---------------- */
+(function () {
+  /* workers: 60 h, x 1, y 2 → X 60, Y 30, s 0.5. water: 120, x 3, y 3 → X 40, Y 40, s 1. land: 70, x 2, y 1 → X 35, Y 70, s 2
+     curve (0, 30) → (20, 20) → (30, 10) → (35, 0) */
+  const L = [{ X: 60, Y: 30, cls: 1, lab: [42, 12], name: 'עובדים' }, { X: 40, Y: 40, cls: 2, lab: [3, 41], name: 'מים' }, { X: 35, Y: 70, cls: 3, lab: [4, 64], name: 'קרקע' }];
+  const P = [[0, 30], [20, 20], [30, 10], [35, 0]];
+  const D = {};
+  const put = (k, s, v, ex, src) => { D[k] = { s, v, ex, src }; };
+  const nm = [['שעות עבודה', 60, 1, 2, 'f1c'], ['מים (מ״ק)', 120, 3, 3, 'f2c'], ['קרקע (דונם)', 70, 2, 1, 'f3c']];
+  nm.forEach((f, i) => {
+    put('n' + i, 1, '<b class="' + f[4] + '">' + f[0] + '</b>');
+    put('q' + i, 1, m(f[1]), '<b class="t">נתון</b>לרשות החווה ' + f[1] + ' יחידות ' + f[0] + '.');
+    put('ax' + i, 1, m(f[2]), '<b class="t">נתון</b>טון עגבניות דורש ' + f[2] + ' יחידות ' + f[0] + '.');
+    put('ay' + i, 1, m(f[3]), '<b class="t">נתון</b>טון מלפפונים דורש ' + f[3] + ' יחידות ' + f[0] + '.');
+    const X = f[1] / f[2], Y = f[1] / f[3];
+    put('X' + i, 2 + i, m(X), '<b class="t">Xmax לפי ' + f[0] + '</b>' + m(f[1] + ' / ' + f[2] + ' = ' + X) + ' טון עגבניות.', ['q' + i, 'ax' + i]);
+    put('Y' + i, 2 + i, m(Y), '<b class="t">Ymax לפי ' + f[0] + '</b>' + m(f[1] + ' / ' + f[3] + ' = ' + Y) + ' טון מלפפונים.', ['q' + i, 'ay' + i]);
+    put('s' + i, 5 + i, m(m5r(Y / X)), '<b class="t">שיפוע הקו</b>' + m(Y + ' / ' + X + ' = ' + m5r(Y / X)) + '. זה גם ' + m(f[2] + ' / ' + f[3]) + ': מה שדורש טון עגבניות חלקי מה שדורש טון מלפפונים.', ['X' + i, 'Y' + i]);
+  });
+  put('pA', 8, m('(0, 30)'), '<b class="t">נקודה A, על ציר y</b>ה-Ymax הנמוך מבין השלושה: העובדים מספיקים ל-30 טון בלבד.', ['Y0', 'Y1', 'Y2']);
+  put('wA', 8, '<b class="f1c">עובדים</b>');
+  put('pB', 9, m('(20, 20)'), '<b class="t">נקודה B: עובדים פוגשים מים</b>' + m('30 − 0.5x = 40 − x') + ', ולכן ' + m('x = 20') + ' ו-' + m('y = 20') + '. בדיקה בקו הקרקע: ' + m('70 − 2 × 20 = 30') + ', מעל 20. הקרקע לא מגבילה כאן.', ['s0', 's1']);
+  put('wB', 9, '<b class="f1c">עובדים</b> + <b class="f2c">מים</b>');
+  put('pC', 10, m('(30, 10)'), '<b class="t">נקודה C: מים פוגשים קרקע</b>' + m('40 − x = 70 − 2x') + ', ולכן ' + m('x = 30') + ' ו-' + m('y = 10') + '. בדיקה בקו העובדים: ' + m('30 − 0.5 × 30 = 15') + ', מעל 10.', ['s1', 's2']);
+  put('wC', 10, '<b class="f2c">מים</b> + <b class="f3c">קרקע</b>');
+  put('pD', 11, m('(35, 0)'), '<b class="t">נקודה D, על ציר x</b>ה-Xmax הנמוך: הקרקע מספיקה ל-35 טון עגבניות בלבד.', ['X0', 'X1', 'X2']);
+  put('wD', 11, '<b class="f3c">קרקע</b>');
+  put('mAB', 15, m('0.5'), '<b class="t">קטע AB: העובדים מגבילים</b>' + m('MC(x) = 1 / 2 = 0.5') + ' טון מלפפונים לטון עגבניות.', ['s0']);
+  put('mBC', 16, m('1'), '<b class="t">קטע BC: המים מגבילים</b>' + m('MC(x) = 3 / 3 = 1') + '.', ['s1']);
+  put('mCD', 17, m('2'), '<b class="t">קטע CD: הקרקע מגבילה</b>' + m('MC(x) = 2 / 1 = 2') + '. השיפועים עולים: 0.5, 1, 2. העקומה קעורה.', ['s2']);
+  const SAY = {
+    0: '<b class="t">מתחילים</b>שלושה גורמי ייצור, ולכן שלושה קווי מגבלה. השיטה זהה לשני גורמים, עם שלב נוסף: בודקים איזה קו נמוך בכל טווח.',
+    1: '<b class="t">שלב 1: הנתונים</b>שורה לכל גורם ייצור.',
+    12: '<b class="t">שרטוט: קו העובדים</b>מ-' + m('(0, 30)') + ' עד ' + m('(60, 0)') + '. בצד שמאל הוא הנמוך.',
+    13: '<b class="t">קו המים וקו הקרקע</b>שלושת הקווים בגרף. בכל טווח של x מחפשים את הקו הנמוך.',
+    14: '<b class="t">העקומה: תמיד הקו הנמוך</b>A עד B על קו העובדים, B עד C על קו המים, C עד D על קו הקרקע. שתי נקודות שבר. לחצו על נקודה להסבר.'
+  };
+  m5Worked({
+    id: 'm2', kick: 'שלושה גורמי ייצור', title: 'חוות ״עמק״: שלושה קווים, עקומה אחת', n: 17, src: 'שאלה בסגנון מבחן', tags: { ex: ['5.7'] },
+    q: 'חוות ״עמק״ מגדלת עגבניות (' + m('x') + ', בטונות) ומלפפונים (' + m('y') + ', בטונות). לרשותה 60 שעות עבודה, 120 מ״ק מים ו-70 דונם קרקע.'
+      + '<br>טון עגבניות דורש שעת עבודה אחת, 3 מ״ק מים ו-2 דונם.<br>טון מלפפונים דורש 2 שעות עבודה, 3 מ״ק מים ודונם אחד.'
+      + '<div style="margin-top:6px"><b>נדרש:</b></div><ol style="margin:2px 18px 0 0;padding:0"><li>בנו ושרטטו את עקומת התמורה.</li><li>מי מגביל בכל קטע, ומהי העלות השולית של עגבניות בכל קטע?</li></ol>',
+    stages: [['הנתונים', 1, 1], ['Xmax ו-Ymax', 2, 4], ['שיפועים', 5, 7], ['נקודות', 8, 11], ['שרטוט', 12, 14], ['עלות שולית', 15, 17]],
+    tables: [
+      { head: ['גורם', 'כמות', 'לטון ' + m('x'), 'לטון ' + m('y'), m('Xmax'), m('Ymax'), 'שיפוע'], rows: [0, 1, 2].map(i => ['n' + i, 'q' + i, 'ax' + i, 'ay' + i, 'X' + i, 'Y' + i, 's' + i]) },
+      { title: 'נקודות העקומה', head: ['נקודה', 'איפה', 'מי מנוצל עד הסוף'], rows: [['<b>A</b>', 'pA', 'wA'], ['<b>B</b>', 'pB', 'wB'], ['<b>C</b>', 'pC', 'wC'], ['<b>D</b>', 'pD', 'wD']] },
+      { title: 'עלות שולית של טון עגבניות', head: ['AB', 'BC', 'CD'], rows: [['mAB', 'mBC', 'mCD']] }],
+    D, chart: { xmax: 64, ymax: 74, xLabel: 'עגבניות (x)', yLabel: 'מלפפונים (y)' },
+    say: k => SAY[k],
+    draw(ch, k, anim, host) {
+      m5Lines(ch, L, { ends: k >= 4 ? 3 : k >= 3 ? 2 : k >= 2 ? 1 : 0, lines: k >= 13 ? 3 : k >= 12 ? 1 : 0, curve: k >= 14 ? P : [], dim: k >= 14, anim: anim ? ({ 12: 'l0', 13: 'l1', 14: 'p0' })[k] : '' });
+      if (k === 15) ch.curve([P[0], P[1]], { cls: 'seghl5' });
+      if (k === 16) ch.curve([P[1], P[2]], { cls: 'seghl5' });
+      if (k === 17) ch.curve([P[2], P[3]], { cls: 'seghl5' });
+      const T = [['A (0, 30)', 'ne', 'נקודה A: רק מלפפונים', 'העובדים נגמרים ב-30 טון (' + m('30 × 2 = 60') + ' שעות). המים מספיקים ל-40 והקרקע ל-70, ולכן נשאר מהם עודף.'],
+        ['B (20, 20)', 'ne', 'נקודה B: עובדים ומים', 'שעות עבודה: ' + m('20 + 2 × 20 = 60') + '. מים: ' + m('3 × 20 + 3 × 20 = 120') + '. שניהם מנוצלים עד הסוף. מהקרקע נשארים ' + m('70 − 60 = 10') + ' דונם.'],
+        ['C (30, 10)', 'ne', 'נקודה C: מים וקרקע', 'מים: ' + m('90 + 30 = 120') + '. קרקע: ' + m('60 + 10 = 70') + '. שניהם מנוצלים. מהעובדים נשארות ' + m('60 − 50 = 10') + ' שעות.'],
+        ['D (35, 0)', 'e', 'נקודה D: רק עגבניות', 'הקרקע נגמרת ב-35 טון (' + m('35 × 2 = 70') + '). מים בשימוש: 105 מ״ק, עובדים: 35 שעות.']];
+      const on = [k >= 8, k >= 9, k >= 10, k >= 11];
+      P.forEach((p, i) => { if (on[i]) ptTip(ch, host, p[0], p[1], { cls: i === 0 || i === 3 ? 'ok5' : 'gold', label: T[i][0], pos: T[i][1], title: T[i][2], tip: T[i][3] }); });
+    }
+  });
+})();
+
+/* ---------------- m3: special cases. Parallel lines, and a line that is entirely above ---------------- */
+slide({
+  id: 'm3', kick: 'מקרים מיוחדים', kc: 't', title: 'משק ״ערבה״: קווים מקבילים, וקו שתמיד מעל', steps: 9, tags: { ex: ['5.8'] },
+  build(root, ctx) {
+    /* land 40: x 1, y 2 → X 40, Y 20. water 150: x 3, y 6 → X 50, Y 25 (parallel). labor 120: x 2, y 5 → X 60, Y 24 (above, not parallel) */
+    const L = [{ X: 40, Y: 20, cls: 1, lab: [21, 13], name: 'קרקע' }, { X: 50, Y: 25, cls: 2, lab: [31, 12], name: 'מים' }, { X: 60, Y: 24, cls: 3, lab: [36, 13.5], name: 'עבודה' }];
+    const q = h('div.card.l3-q', h('div.l3-src', 'דוגמה'), h('div', { html: 'משק ״ערבה״ מגדל תמרים (' + m('x') + ') וענבים (' + m('y') + '), בטונות. לרשותו 40 דונם קרקע ו-150 מ״ק מים.<br>טון תמרים דורש דונם אחד ו-3 מ״ק מים.<br>טון ענבים דורש 2 דונם ו-6 מ״ק מים.' }));
+    const q2 = rv(h('div.card.l3-q', h('div.l3-src', 'מצטרף גורם שלישי'), h('div', { html: 'למשק גם 120 שעות עבודה. טון תמרים דורש 2 שעות, וטון ענבים 5 שעות.' })), 6);
+    const T = h('table.wbt'); T.appendChild(h('thead', h('tr', ['גורם', m('Xmax'), m('Ymax'), 'שיפוע'].map(x => h('th', { html: x })))));
+    const tb = h('tbody'); T.appendChild(tb);
+    const rows = [['<b class="f1c">קרקע</b>', m('40 / 1 = 40'), m('40 / 2 = 20'), m('0.5'), 1], ['<b class="f2c">מים</b>', m('150 / 3 = 50'), m('150 / 6 = 25'), m('0.5'), 2], ['<b class="f3c">עבודה</b>', m('120 / 2 = 60'), m('120 / 5 = 24'), m('0.4'), 7]];
+    rows.forEach(r => { const tr = h('tr'); r.slice(0, 4).forEach((c, j) => tr.appendChild(h('td', { html: c, 'data-s': r[4] + (j === 3 ? 1 : 0) }))); tb.appendChild(tr); });
+    const exp = h('div.wbx');
+    const qa = qc(ctx, 'המשק מייצר ביעילות 10 טון תמרים. כמה מ״ק מים לא מנוצלים?', [
+      { t: m('30'), ok: true, why: 'על העקומה ' + m('y = 20 − 0.5 × 10 = 15') + '. מים בשימוש: ' + m('3 × 10 + 6 × 15 = 120') + ', מתוך 150. נשארים 30. בכל נקודה על העקומה נשארים 30, כי הקווים מקבילים.' },
+      { t: m('0'), why: 'המים אף פעם לא נגמרים: קו המים כולו מעל קו הקרקע. חשבו כמה מים בשימוש בנקודה ' + m('(10, 15)') + '.' },
+      { t: m('60'), why: 'בדקו שוב: ' + m('3 × 10 + 6 × 15 = 120') + ', ו-' + m('150 − 120 = 30') + '.' }]);
+    const qb = qc(ctx, 'מה העלות הממוצעת של טון תמרים כשהמשק מייצר ביעילות 30 טון תמרים?', [
+      { t: m('0.5'), ok: true, why: 'העקומה ישרה, ולכן העלות השולית קבועה ושווה לעלות הממוצעת: ' + m('TC(x) = 20 − 5 = 15') + ', ' + m('AC(x) = 15 / 30 = 0.5') + '.' },
+      { t: m('5'), why: 'זו כמות הענבים בנקודה, ' + m('20 − 0.5 × 30 = 5') + '. העלות הכוללת היא מה שוויתרו עליו: ' + m('20 − 5 = 15') + '.' },
+      { t: m('2'), why: 'זו העלות השולית של ענבים, ההופכי. כאן שואלים על תמרים.' }]);
+    const host = h('div');
+    const left = h('div.stack.l2-tight', q, T, q2);
+    const key3 = h('div.ptkey', [['#7c3aed', 'קו הקרקע'], ['#d97706', 'קו המים'], ['#0891b2', 'קו העבודה'], ['#16a34a', 'עקומת התמורה']].map(([c, t]) => h('span', h('i', { style: 'background:' + c }), t)));
+    const right = h('div.stack.l2-tight', host, key3, exp, rv(h('div.m5rule', { html: '<b>הכלל:</b> אם ה-Xmax וגם ה-Ymax של גורם גדולים מאלה של גורם אחר, הקו שלו כולו מעל. הוא אף פעם לא מגביל, ותמיד נשאר ממנו עודף. אם הקווים מקבילים, העקומה ישרה ו-' + m('MC = AC') + ' לאורך כולה.' }), 9));
+    const mid = h('div.stack.l2-tight', rv(qa, 5), rv(qb, 5));
+    root.appendChild(h('div', { style: 'display:grid;grid-template-columns:minmax(0,.95fr) minmax(0,1.1fr) minmax(0,.95fr);gap:12px;align-items:start' }, left, right, mid));
+    const ch = PPC.chart(host, { w: 450, h: 262, xmax: 64, ymax: 28, xLabel: 'תמרים (x)', yLabel: 'ענבים (y)', ticksX: [], ticksY: [], grid: false, showTicks: false });
+    const SAY = ['<b class="t">מתחילים</b>שני גורמי ייצור. נחשב את הקצוות של כל קו.', '<b class="t">קו הקרקע</b>' + m('Xmax = 40') + ', ' + m('Ymax = 20') + '. השיפוע ' + m('20 / 40 = 0.5') + '.',
+      '<b class="t">קו המים</b>' + m('Xmax = 50') + ', ' + m('Ymax = 25') + '. השיפוע ' + m('25 / 50 = 0.5') + '. אותו שיפוע: הקווים מקבילים.',
+      '<b class="t">הקווים לא נפגשים</b>קו המים כולו מעל קו הקרקע. אין נקודת מפגש ואין נקודת שבר.',
+      '<b class="t">העקומה היא קו הקרקע כולו</b>עקומה ישרה, מ-' + m('(0, 20)') + ' עד ' + m('(40, 0)') + '. העלות השולית קבועה, 0.5, ושווה לעלות הממוצעת. המים לעולם לא נגמרים: תמיד נשאר מהם עודף.',
+      '<b class="t">בדקו את עצמכם</b>שתי שאלות קצרות משמאל.',
+      '<b class="t">גורם שלישי: עבודה</b>' + m('Xmax = 60') + ', ' + m('Ymax = 24') + '.',
+      '<b class="t">קו העבודה: כולו מעל קו הקרקע</b>השיפוע 0.4, לא מקביל. אבל שני הקצוות שלו, 24 ו-60, גבוהים מהקצוות של הקרקע, 20 ו-40. לכן הוא לא חוצה את קו הקרקע.',
+      '<b class="t">העקומה לא משתנה</b>עדיין קו הקרקע. העבודה אף פעם לא מגבילה, וגם ממנה תמיד נשאר עודף.',
+      '<b class="t">הכלל</b>לחצו על קצות הקווים לקבלת הסבר.'];
+    function draw(k, anim) {
+      tb.querySelectorAll('td').forEach(td => { const on = k >= +td.dataset.s; td.style.visibility = on ? 'visible' : 'hidden'; td.className = on && +td.dataset.s === k ? 'c new' : 'c'; });
+      m5Lines(ch, L, { ends: k >= 7 ? 3 : k >= 2 ? 2 : k >= 1 ? 1 : 0, lines: k >= 8 ? 3 : k >= 2 ? 2 : k >= 1 ? 1 : 0, curve: k >= 4 ? [[0, 20], [40, 0]] : [], dim: false, nolab: true, anim: anim ? ({ 1: 'l0', 2: 'l1', 4: 'p0', 8: 'l2' })[k] : '' });
+      if (k >= 4) {
+        ptTip(ch, host, 0, 20, { cls: 'ok5', label: 'A (0, 20)', pos: 'se', title: 'נקודה A', tip: 'רק ענבים: 20 טון. הקרקע נגמרת (' + m('2 × 20 = 40') + '). מים בשימוש: ' + m('6 × 20 = 120') + ', ונשארים 30.' });
+        ptTip(ch, host, 40, 0, { cls: 'ok5', label: 'B (40, 0)', pos: 'n', title: 'נקודה B', tip: 'רק תמרים: 40 טון. הקרקע נגמרת. מים בשימוש: ' + m('3 × 40 = 120') + ', ושוב נשארים 30.' });
+        ptTip(ch, host, 50, 0, { cls: 'bad5', title: 'קצה קו המים על ציר x', tip: 'המים מספיקים ל-50 טון תמרים, אבל הקרקע רק ל-40. נקודה זו מחוץ לעקומה: בלתי אפשרית.' });
+      }
+      if (k >= 8) ptTip(ch, host, 60, 0, { cls: 'bad5', title: 'קצה קו העבודה על ציר x', tip: 'העבודה מספיקה ל-60 טון תמרים. הקרקע מספיקה רק ל-40, ולכן העבודה אף פעם לא נגמרת ראשונה.' });
+      exp.innerHTML = SAY[Math.min(k, 9)];
+    }
+    draw(ctx.static ? 9 : 0, false);
+    ctx.onStep((k, dir, init) => draw(k, !init && dir > 0));
+  }
+});
+
+/* ---------------- m4: live sheet, three factors ---------------- */
+const GLB = { raw: null, solved: false };
+GLB.story = 'מפעל ״גלבוע״ מייצר כיסאות (' + m('x') + ') ושולחנות (' + m('y') + '). לרשותו 90 יחידות עץ, 120 שעות עבודה ו-100 ליטר צבע.<br>כיסא דורש יחידת עץ אחת, 2 שעות עבודה ו-2 ליטר צבע.<br>שולחן דורש 3 יחידות עץ, 3 שעות עבודה וליטר צבע אחד.';
+function glbCfg() {
+  const data = { A1: 'גורם ייצור', B1: 'כמות', C1: 'לכיסא', D1: 'לשולחן', E1: 'Xmax', F1: 'Ymax', G1: 'שיפוע', A2: 'עץ', A3: 'שעות עבודה', A4: 'צבע',
+    A6: 'נקודות העקומה', B6: 'x', C6: 'y', A7: 'A (על ציר y)', A8: 'B (עץ ועבודה)', A9: 'C (עבודה וצבע)', A10: 'D (על ציר x)',
+    E6: 'קטע', F6: 'MC(x)', G6: 'MC(y)', E7: 'AB (עץ)', E8: 'BC (עבודה)', E9: 'CD (צבע)' };
+  const sol = { B2: '90', C2: '1', D2: '3', B3: '120', C3: '2', D3: '3', B4: '100', C4: '2', D4: '1',
+    E2: '=B2/C2', F2: '=B2/D2', G2: '=F2/E2', E3: '=B3/C3', F3: '=B3/D3', G3: '=F3/E3', E4: '=B4/C4', F4: '=B4/D4', G4: '=F4/E4',
+    B7: '0', C7: '=MIN(F2:F4)', B8: '=(F3-F2)/(G3-G2)', C8: '=F2-G2*B8', B9: '=(F4-F3)/(G4-G3)', C9: '=F3-G3*B9', B10: '=MIN(E2:E4)', C10: '0',
+    F7: '=G2', G7: '=1/F7', F8: '=G3', G8: '=1/F8', F9: '=G4', G9: '=1/F9' };
+  const vin = ['B2', 'C2', 'D2', 'B3', 'C3', 'D3', 'B4', 'C4', 'D4'];
+  const pick = ks => Object.fromEntries(ks.map(a => [a, sol[a]]));
+  const steps = [
+    { cells: pick(vin), note: 'מסדרים את הנתונים: שורה לכל גורם. בעמודה B הכמות במפעל, בעמודה C מה שדורש כיסא, בעמודה D מה שדורש שולחן.' },
+    { cells: pick(['E2', 'E3', 'E4']), note: 'Xmax לכל גורם: הכמות חלקי מה שדורש כיסא. בשורה 2: <span class="m">=B2/C2</span>, כלומר 90. ואז גוררים למטה.' },
+    { cells: pick(['F2', 'F3', 'F4']), note: 'Ymax לכל גורם: הכמות חלקי מה שדורש שולחן. בשורה 2: <span class="m">=B2/D2</span>, כלומר 30.' },
+    { cells: pick(['G2', 'G3', 'G4']), note: 'שיפוע כל קו: Ymax חלקי Xmax. עץ 0.33, עבודה 0.67, צבע 2. השיפועים עולים: כך יופיעו הקטעים משמאל לימין.' },
+    { cells: pick(['B7', 'C7']), note: 'נקודה A על ציר y: הגורם שנגמר ראשון קובע, ולכן ה-Ymax הנמוך: <span class="m">=MIN(F2:F4)</span>, כלומר 30. העץ מגביל.' },
+    { cells: pick(['B8', 'C8']), note: 'נקודה B: קו העץ פוגש את קו העבודה. <span class="m">30 − 0.33x = 40 − 0.67x</span>, ולכן <span class="m">x = 30</span>. מציבים: <span class="m">y = 30 − 0.33 × 30 = 20</span>.' },
+    { cells: pick(['B9', 'C9']), note: 'נקודה C: קו העבודה פוגש את קו הצבע. <span class="m">40 − 0.67x = 100 − 2x</span>, ולכן <span class="m">x = 45</span>. מציבים: <span class="m">y = 40 − 0.67 × 45 = 10</span>.' },
+    { cells: pick(['B10', 'C10']), note: 'נקודה D על ציר x: ה-Xmax הנמוך, <span class="m">=MIN(E2:E4)</span>, כלומר 50. הצבע מגביל.' },
+    { cells: pick(['F7', 'G7', 'F8', 'G8', 'F9', 'G9']), note: 'עלות שולית של כיסא בכל קטע: השיפוע של הקו המגביל בו. עלות שולית של שולחן: ההופכי, <span class="m">=1/F7</span>.' }];
+  const traps = {
+    E2: [['=C2/B2', 'כאן חילקתם הפוך. Xmax הוא הכמות חלקי מה שדורש כיסא: 90 חלקי 1.'], ['=B2/D2', 'זה ה-Ymax. ל-Xmax מחלקים במה שדורש כיסא.']],
+    F2: [['=B2/C2', 'זה ה-Xmax. ל-Ymax מחלקים במה שדורש שולחן: 90 חלקי 3.']],
+    G2: [['=E2/F2', 'חילקתם Xmax ב-Ymax. השיפוע הוא Ymax חלקי Xmax.']],
+    C7: [['=MAX(F2:F4)', 'זה ה-Ymax הגבוה. המפעל מוגבל בגורם שנגמר ראשון: לוקחים את הנמוך.'], ['100', 'הצבע מספיק ל-100 שולחנות, אבל העץ רק ל-30.']],
+    B10: [['=MAX(E2:E4)', 'זה ה-Xmax הגבוה. לוקחים את הנמוך.'], ['90', 'העץ מספיק ל-90 כיסאות, אבל הצבע רק ל-50.']],
+    B9: [['=(F4-F2)/(G4-G2)', 'זה המפגש של העץ והצבע. בנקודה הזו קו העבודה נמוך משניהם, ולכן היא לא על העקומה. נקודה C היא מפגש העבודה והצבע.']] };
+  return { traps, rows: 10, cols: 7, widths: [128, 56, 62, 66, 84, 62, 62], data, solution: sol, targets: Object.keys(sol), vin, values: true, headRows: [1, 6], steps, tools: false, tol: 0.011,
+    hints: ['התחילו בסידור הנתונים: שורה 2 עץ, שורה 3 שעות עבודה, שורה 4 צבע.', 'Xmax: הכמות חלקי מה שדורש כיסא. Ymax: חלקי מה שדורש שולחן.', 'נקודות הקצה: MIN על עמודת ה-Ymax ועל עמודת ה-Xmax.', 'נקודת מפגש: הפרש ה-Ymax חלקי הפרש השיפועים.'],
+    wrongMsg: 'התוצאה אינה נכונה. לחצו על ״הצעד הבא״ כדי לראות את ההסבר לשלב הזה', done: 'הטבלה נכונה: ארבע נקודות העקומה והעלות השולית בכל קטע.' };
+}
+slide({
+  id: 'm4', kick: 'עכשיו אתם', kc: 'y', title: 'מפעל ״גלבוע״: שלושה גורמים בגיליון', steps: 0, tags: { ex: ['5.7'] },
+  build(root, ctx) {
+    const q = h('div.card.l3-q.lvq', h('div.l3-src', 'נסו לבד, בגיליון'), h('div', { html: GLB.story }), h('div', { style: 'margin-top:6px', html: '<b>נדרש:</b> בנו בגיליון את טבלת הגורמים, את ארבע נקודות העקומה ואת העלות השולית בכל קטע.' }));
+    if (ctx.static) {
+      root.appendChild(h('div.m4w', q, h('div.stack', L2.tbl(['גורם', 'כמות', 'לכיסא', 'לשולחן', 'Xmax', 'Ymax', 'שיפוע'], [['עץ', 90, 1, 3, 90, 30, '0.33'], ['שעות עבודה', 120, 2, 3, 60, 40, '0.67'], ['צבע', 100, 2, 1, 50, 100, 2]].map(r => r.map(v => typeof v === 'number' ? m(v) : v))),
+        L2.tbl(['נקודה', 'כיסאות x', 'שולחנות y'], [['A', 0, 30], ['B', 30, 20], ['C', 45, 10], ['D', 50, 0]].map(r => [r[0], m(r[1]), m(r[2])])))));
+      return;
+    }
+    const fbBox = h('div.lvfb');
+    const left = h('div.stack.l2-tight', q, fbBox);
+    const host = h('div.xlhost');
+    root.appendChild(h('div.m4w', left, host));
+    const cfg = glbCfg();
+    cfg.onChange = () => { try { GLB.raw = Object.assign({}, api.sheet.raw); if (host.dataset.solved === '1') GLB.solved = true; } catch (e) { } };
+    const api = window.__XL.mount(host, cfg);
+    host.addEventListener('keydown', ev => ev.stopPropagation());
+    const fb = host.querySelector('.xl-fb'); if (fb) fbBox.appendChild(fb);
+    if (GLB.raw) { const o = {}; cfg.targets.forEach(a => { if (GLB.raw[a] != null) o[a] = GLB.raw[a]; }); api.putMany(o); }
+    host.__api = api;
+  }
+});
+
+(function () { const st = document.createElement('style'); st.textContent = '.e1c .wbt td{height:31px!important;font-size:16px!important;padding:2px 5px}.e1c .wbt th{padding:3px 4px}.e1c .wbh{margin:4px 0 2px}.e1c .wbq{font-size:14.5px;line-height:1.42}.e1c .wbx{font-size:14.5px}.e2c .xl-g td,.e2c .xl-g th{height:29px!important;line-height:27px;padding-top:0;padding-bottom:0}.e2c .xl-g td{font-size:15.5px}'; document.head.appendChild(st); })();
+/* ===== lesson 5: an exam-style question solved click by click (e1), and a sibling question in a live sheet (e2) ===== */
+const KN = conEco({ F: [{ name: 'קרקע', q: 120, ax: 4, ay: 2, lab: [31, 34] }, { name: 'מים', q: 60, ax: 1, ay: 2, lab: [40, 13] }] });
+slide({
+  id: 'e1', kick: 'שאלה בסגנון מבחן', kc: 'p', title: 'משק ״כנרת״: עקומה, עלות שולית, אבטלה מבנית וצירופים', steps: 17, tags: { ex: ['5.9'] },
+  build(root, ctx) {
+    const E = KN;
+    const ST = [['נתונים', 1, 1], ['Xmax, Ymax ושיפוע', 2, 4], ['נקודות העקומה', 5, 7], ['שרטוט', 8, 10], ['עלות שולית', 11, 13], ['אבטלה מבנית', 14, 15], ['צירופים', 16, 17]];
+    const strip = h('div.stg');
+    const sb = ST.map((s, i) => { const b = h('button', { type: 'button' }, (i + 1) + '. ' + s[0]); b.addEventListener('click', () => jumpStep(s[2])); strip.appendChild(b); return b; });
+    const q = h('div.card.l3-q.wbq', h('div.l3-src', 'שאלה בסגנון מבחן'),
+      h('div', { html: 'משק ״כנרת״ מגדל עגבניות (x) ומלפפונים (y), בטונות. לרשות המשק 120 דונם קרקע ו-60 יחידות מים.' }),
+      h('div', { style: 'margin-top:4px', html: 'לטון עגבניות דרושים 4 דונם ויחידת מים אחת. לטון מלפפונים דרושים 2 דונם ו-2 יחידות מים.' }),
+      h('div', { style: 'margin-top:6px', html: '<b>א.</b> שרטטו את עקומת התמורה.<br><b>ב.</b> מהי העלות השולית של טון העגבניות ה-10? ה-25? ה-20?<br><b>ג.</b> המשק מייצר ביעילות 10 טון עגבניות. איזה גורם באבטלה מבנית, ובאיזה היקף?<br><b>ד.</b> סווגו את הצירופים ' + m('(15, 20)') + ' ו-' + m('(25, 15)') + '.' }));
+    const C = {}, D = {};
+    const T = h('table.wbt');
+    T.appendChild(h('thead', h('tr', ['גורם', 'כמות', 'לעגבניות<br>' + m('x'), 'למלפפונים<br>' + m('y'), m('Xmax'), m('Ymax'), 'שיפוע'].map(t => h('th', { html: t })))));
+    const tb = h('tbody'); T.appendChild(tb);
+    E.F.forEach((f, i) => { const tr = h('tr'); ['n', 'q', 'ax', 'ay', 'X', 'Y', 's'].forEach(k => { const td = h('td'); C[k + i] = td; tr.appendChild(td); }); tb.appendChild(tr); });
+    const T2 = h('table.wbt'); T2.appendChild(h('thead', h('tr', ['נקודה', 'איך', m('x'), m('y')].map(t => h('th', { html: t })))));
+    const tb2 = h('tbody'); T2.appendChild(tb2);
+    [0, 1, 2].forEach(i => { const tr = h('tr'); ['l', 'w', 'x', 'y'].forEach(k => { const td = h('td'); C['p' + k + i] = td; tr.appendChild(td); }); tb2.appendChild(tr); });
+    const T3 = h('table.wbt'); T3.appendChild(h('thead', h('tr', ['סעיף', 'חישוב', 'תשובה'].map(t => h('th', { html: t })))));
+    const tb3 = h('tbody'); T3.appendChild(tb3);
+    const R3 = [['m1', 'ב, טון 10'], ['m2', 'ב, טון 25'], ['m3', 'ב, טון 20'], ['u1', 'ג, קרקע בשימוש'], ['u2', 'ג, קרקע עודפת'], ['k1', 'ד, ' + m('(15, 20)')], ['k2', 'ד, ' + m('(25, 15)')]];
+    R3.forEach(r => { const tr = h('tr', h('td', { html: '<b>' + r[1] + '</b>' })); ['a', 'b'].forEach(k => { const td = h('td'); C[r[0] + k] = td; tr.appendChild(td); }); tb3.appendChild(tr); });
+    const exp = h('div.wbx');
+    const mid = h('div', T, h('div.wbh', 'נקודות העקומה'), T2, h('div.wbh', 'סעיפים ב עד ד'), T3);
+    const host = h('div');
+    const right = h('div', host, ptKey([[PT_C.gold, 'נקודה על העקומה'], [PT_C.in5, 'מתחת לעקומה'], [PT_C.bad5, 'מעל העקומה']]));
+    root.appendChild(strip);
+    root.appendChild(h('div.wb.wb2.e1c', h('div.stack.l2-tight', q, h('div.wbh', 'איך חושב? לחצו על תא'), exp), mid, right));
+    const ch = PPC.chart(host, { w: 470, h: 400, xmax: 64, ymax: 64, xLabel: 'עגבניות (x)', yLabel: 'מלפפונים (y)', ticksX: [], ticksY: [], grid: false, showTicks: false });
+    const put = (key, from, html, ex) => { D[key] = { from, html, ex }; };
+    E.F.forEach((f, i) => {
+      const of = 'ה' + f.name;
+      put('n' + i, 1, '<b class="f' + (i + 1) + 'c">' + f.name + '</b>');
+      put('q' + i, 1, m(f.q), '<b class="t">נתון</b>לרשות המשק ' + f.q + (i ? ' יחידות מים.' : ' דונם קרקע.'));
+      put('ax' + i, 1, m(f.ax), '<b class="t">נתון</b>טון עגבניות דורש ' + f.ax + (i ? ' יחידת מים.' : ' דונם.'));
+      put('ay' + i, 1, m(f.ay), '<b class="t">נתון</b>טון מלפפונים דורש ' + f.ay + (i ? ' יחידות מים.' : ' דונם.'));
+      put('X' + i, 2, m(f.X), '<b class="t">Xmax לפי ' + of + '</b>אם כל ' + of + ' הולך לעגבניות: ' + m('Xmax = ' + f.q + ' / ' + f.ax + ' = ' + f.X) + ' טון.');
+      put('Y' + i, 3, m(f.Y), '<b class="t">Ymax לפי ' + of + '</b>אם כל ' + of + ' הולך למלפפונים: ' + m('Ymax = ' + f.q + ' / ' + f.ay + ' = ' + f.Y) + ' טון.');
+      put('s' + i, 4, m(f.s), '<b class="t">שיפוע קו ' + of + '</b>' + m('Ymax / Xmax = ' + f.Y + ' / ' + f.X + ' = ' + f.s) + '. משוואת הקו: ' + m('y = ' + f.Y + ' − ' + f.s + 'x') + '.');
+    });
+    const PW = ['Ymax נמוך', 'מפגש', 'Xmax נמוך'];
+    const PE = ['<b class="t">A: על ציר y</b>הקרקע מספיקה ל-60 טון מלפפונים, המים רק ל-30. הגורם שנגמר ראשון קובע: ' + m('A (0, 30)') + '.',
+      '<b class="t">B: נקודת המפגש</b>' + m('60 − 2x = 30 − 0.5x') + ', ולכן ' + m('1.5x = 30') + ', ' + m('x = 20') + ', ' + m('y = 60 − 2 × 20 = 20') + '.',
+      '<b class="t">C: על ציר x</b>הקרקע מספיקה ל-30 טון עגבניות, המים ל-60. הנמוך קובע: ' + m('C (30, 0)') + '.'];
+    E.P.forEach((p, i) => { put('pl' + i, 5 + i, '<b>' + 'ABC'[i] + '</b>'); put('pw' + i, 5 + i, PW[i], PE[i]); put('px' + i, 5 + i, m(p[0]), PE[i]); put('py' + i, 5 + i, m(p[1]), PE[i]); });
+    const RX = {
+      m1: [11, m('x = 10 < 20'), m('0.5'), '<b class="t">העגבנייה ה-10</b>' + m('x = 10') + ' משמאל לנקודת המפגש. שם המים מגבילים, והעקומה היא קו המים ששיפועו 0.5. טון עגבניות עולה חצי טון מלפפונים.'],
+      m2: [12, m('x = 25 > 20'), m('2'), '<b class="t">העגבנייה ה-25</b>' + m('x = 25') + ' מימין לנקודת המפגש. שם הקרקע מגבילה, ושיפוע קו הקרקע 2.'],
+      m3: [13, 'מ-19 ל-20', m('0.5'), '<b class="t">העגבנייה ה-20: בנקודת השבר</b>הטון ה-20 הוא המעבר מ-19 ל-20, כלומר הקטע שמשמאל ל-B. לכן ' + m('MC(x) = 0.5') + '. כלל: ל-x מסתכלים שמאלה.'],
+      u1: [14, m('4 × 10 + 2 × 25'), m('90'), '<b class="t">איפה המשק?</b>על קו המים: ' + m('y = 30 − 0.5 × 10 = 25') + '. הנקודה ' + m('(10, 25)') + '. המים מנוצלים במלואם: ' + m('10 + 2 × 25 = 60') + '. הקרקע בשימוש: ' + m('4 × 10 + 2 × 25 = 90') + ' דונם.'],
+      u2: [15, m('120 − 90'), '30 דונם', '<b class="t">אבטלה מבנית בקרקע</b>' + m('120 − 90 = 30') + ' דונם לא מנוצלים, אף שהמשק על העקומה. אי אפשר להשתמש בהם בלי מים נוספים.'],
+      k1: [16, m('100 ≤ 120, 55 ≤ 60'), 'פנימי', '<b class="t">' + m('(15, 20)') + '</b>קרקע: ' + m('4 × 15 + 2 × 20 = 100') + ', מים: ' + m('15 + 2 × 20 = 55') + '. שני הגורמים מספיקים, ומשניהם נשאר עודף: נקודה אפשרית ולא יעילה, מתחת לעקומה.'],
+      k2: [17, m('130 > 120'), 'בלתי אפשרי', '<b class="t">' + m('(25, 15)') + '</b>קרקע: ' + m('4 × 25 + 2 × 15 = 130') + ', יותר מ-120. די בגורם אחד שלא מספיק: הצירוף בלתי אפשרי, מעל העקומה.']
+    };
+    Object.keys(RX).forEach(k => { put(k + 'a', RX[k][0], RX[k][1], RX[k][3]); put(k + 'b', RX[k][0], RX[k][2], RX[k][3]); });
+    let K = 0, picked = null;
+    const say = k => {
+      if (k <= 0) return '<b class="t">מתחילים</b>הנתונים כתובים בשאלה במשפטים. הטבלאות שבאמצע ריקות, ונבנה אותן לחיצה אחר לחיצה.';
+      if (k === 1) return '<b class="t">שלב 1: מסדרים את הנתונים</b>שורה לכל גורם ייצור: כמה יש ממנו, וכמה ממנו דורש כל מוצר.';
+      if (k === 8) return '<b class="t">קו הקרקע</b>מ-' + m('(0, 60)') + ' עד ' + m('(30, 0)') + '. כל הצירופים שמנצלים את כל הקרקע.';
+      if (k === 9) return '<b class="t">קו המים</b>מ-' + m('(0, 30)') + ' עד ' + m('(60, 0)') + '. הקווים נחתכים ב-' + m('(20, 20)') + '.';
+      if (k === 10) return '<b class="t">העקומה: הקו הנמוך</b>מ-A עד B קו המים, ומ-B עד C קו הקרקע. לחצו על נקודה בגרף לקבלת הסבר.';
+      const key = Object.keys(D).find(x => D[x].from === k && D[x].ex); return key ? D[key].ex : '';
+    };
+    function paint() {
+      Object.keys(C).forEach(key => {
+        const d = D[key], td = C[key]; if (!d) return; const on = K >= d.from;
+        td.innerHTML = on ? d.html : '';
+        td.className = (on && d.ex ? 'c' : '') + (on && d.from === K ? ' new' : '') + (picked === key ? ' sel' : '');
+      });
+    }
+    Object.keys(C).forEach(key => C[key].addEventListener('click', () => { const d = D[key]; if (!d || !d.ex || K < d.from) return; picked = key; paint(); exp.innerHTML = d.ex; }));
+    const TIPS = [
+      [0, 30, 'gold', 'A (0, 30)', 'רק מלפפונים. המים נגמרים ב-30 טון. מהקרקע נשארים ' + m('120 − 60 = 60') + ' דונם: אבטלה מבנית בקרקע.', 7, 'ne'],
+      [20, 20, 'gold', 'B (20, 20)', 'נקודת המפגש. כאן גם הקרקע וגם המים מנוצלים עד הסוף. זו הנקודה היחידה על העקומה בלי אבטלה מבנית.', 7, 'ne'],
+      [30, 0, 'gold', 'C (30, 0)', 'רק עגבניות. הקרקע נגמרת ב-30 טון. מהמים נשארות ' + m('60 − 30 = 30') + ' יחידות: אבטלה מבנית במים.', 7, 'n'],
+      [10, 25, 'gold', 'P (10, 25)', 'על העקומה, על קו המים. המים מנוצלים במלואם, ו-30 דונם קרקע לא מנוצלים.', 14, 'n'],
+      [15, 20, 'in5', 'Q (15, 20)', 'מתחת לעקומה: שני הגורמים מספיקים, ומשניהם נשאר עודף. אפשרי, לא יעיל.', 16, 'sw'],
+      [25, 15, 'bad5', 'R (25, 15)', 'מעל קו הקרקע: הצירוף דורש 130 דונם, ויש רק 120. בלתי אפשרי.', 17, 'e']];
+    function draw(k, anim) {
+      K = k; picked = null; paint();
+      host.querySelectorAll('.pttip').forEach(e => e.remove());
+      ST.forEach((s, i) => { sb[i].className = k >= s[1] && k <= s[2] ? 'on' : k > s[2] ? 'done' : ''; });
+      conDraw(ch, E, { l1: k >= 8 ? 2 : 0, l2: k >= 9 ? 2 : 0, ix: false, p1: k >= 10, p2: k >= 10, dim: false, anim: anim ? ({ 8: 'l1', 9: 'l2', 10: 'p1' })[k] || '' : '' });
+      if (k >= 11 && k <= 13) { const x = [10, 25, 20][k - 11]; ch.line(x, 0, x, E.F[0].Y - E.F[0].s * x < E.F[1].Y - E.F[1].s * x ? E.F[0].Y - E.F[0].s * x : E.F[1].Y - E.F[1].s * x, 'guide x'); }
+      TIPS.forEach(t => { if (k >= t[5]) ptTip(ch, host, t[0], t[1], { cls: t[2], label: t[3], tip: t[4], pos: t[6], pop: anim && k === t[5] }); });
+      exp.innerHTML = say(k);
+    }
+    draw(ctx.static ? 17 : 0, false);
+    ctx.onStep((k, dir, init) => draw(k, !init && dir > 0));
+  }
+});
+
+/* ----- e2: the same kind of question, in a live sheet. Each step's explanation appears beside the sheet ----- */
+const E2GB = { solved: false, raw: null,
+  story: 'משק ״גלבוע״ מגדל ענבים (x) וזיתים (y), בטונות. לרשות המשק 90 שעות עבודה ו-80 שעות מכונה. טון ענבים דורש 3 שעות עבודה ו-2 שעות מכונה. טון זיתים דורש שעת עבודה אחת ו-4 שעות מכונה.' };
+function gbCfg() {
+  const data = { A1: 'גורם ייצור', B1: 'כמות', C1: 'לענבים x', D1: 'לזיתים y', E1: 'Xmax', F1: 'Ymax', G1: 'שיפוע', A2: 'שעות עבודה', A3: 'שעות מכונה',
+    A5: 'נקודת המפגש', B5: 'x', C5: 'y', A6: 'מפגש הקווים', A8: 'נקודות העקומה', B8: 'x', C8: 'y', A9: 'A (על ציר y)', A10: 'B (המפגש)', A11: 'C (על ציר x)',
+    A13: 'אבטלה מבנית', B13: 'בשימוש', C13: 'לא מנוצל', A14: 'עבודה בנקודה A', A15: 'מכונות בנקודה C' };
+  const sol = { B2: '90', C2: '3', D2: '1', B3: '80', C3: '2', D3: '4', E2: '=B2/C2', F2: '=B2/D2', G2: '=F2/E2', E3: '=B3/C3', F3: '=B3/D3', G3: '=F3/E3',
+    B6: '=(F2-F3)/(G2-G3)', C6: '=F2-G2*B6', B9: '0', C9: '=MIN(F2:F3)', B10: '=B6', C10: '=C6', B11: '=MIN(E2:E3)', C11: '0',
+    B14: '=C2*B9+D2*C9', C14: '=B2-B14', B15: '=C3*B11+D3*C11', C15: '=B3-B15' };
+  const vin = ['B2', 'C2', 'D2', 'B3', 'C3', 'D3'];
+  const pick = ks => Object.fromEntries(ks.map(a => [a, sol[a]]));
+  const steps = [
+    { cells: pick(vin), note: 'מסדרים את הנתונים: שורה לכל גורם. בעמודה B כמה יש ממנו, ב-C כמה דורש טון ענבים, ב-D כמה דורש טון זיתים.' },
+    { cells: pick(['E2', 'E3']), note: 'Xmax לכל גורם: הכמות חלקי מה שדורש טון ענבים. בשורה 2: =B2/C2, כלומר 90 חלקי 3, 30 טון.' },
+    { cells: pick(['F2', 'F3']), note: 'Ymax לכל גורם: הכמות חלקי מה שדורש טון זיתים. בשורה 2: =B2/D2, כלומר 90 טון.' },
+    { cells: pick(['G2', 'G3']), note: 'שיפוע כל קו: Ymax חלקי Xmax. לעבודה 3, למכונות 0.5.' },
+    { cells: pick(['B6']), note: 'נקודת המפגש: 90 − 3x = 20 − 0.5x, ולכן 70 = 2.5x ו-x = 28. בנוסחה: הפרש ה-Ymax חלקי הפרש השיפועים.' },
+    { cells: pick(['C6']), note: 'מציבים את x בקו העבודה: y = 90 − 3 × 28 = 6.' },
+    { cells: pick(['B9', 'C9']), note: 'A, על ציר y: הגורם שנגמר ראשון קובע, ולכן ה-Ymax הנמוך. המכונות מספיקות רק ל-20 טון זיתים.' },
+    { cells: pick(['B10', 'C10']), note: 'B היא נקודת המפגש שמצאתם: (28, 6).' },
+    { cells: pick(['B11', 'C11']), note: 'C, על ציר x: ה-Xmax הנמוך. העבודה מספיקה רק ל-30 טון ענבים.' },
+    { cells: pick(['B14', 'C14']), note: 'בנקודה A מגדלים 20 טון זיתים. שעות עבודה בשימוש: 3 × 0 + 1 × 20 = 20. נשארות 90 − 20 = 70 שעות: אבטלה מבנית בעבודה.' },
+    { cells: pick(['B15', 'C15']), note: 'בנקודה C מגדלים 30 טון ענבים. שעות מכונה בשימוש: 2 × 30 = 60. נשארות 80 − 60 = 20 שעות מכונה: אבטלה מבנית במכונות.' }];
+  const traps = {
+    E2: [['=C2/B2', 'חילקתם הפוך. Xmax הוא הכמות חלקי מה שדורש טון ענבים: 90 חלקי 3.'], ['=B2/D2', 'חילקתם במה שדורש טון זיתים. זה ה-Ymax.']],
+    F2: [['=B2/C2', 'חילקתם במה שדורש טון ענבים. זה ה-Xmax. ל-Ymax מחלקים במה שדורש טון זיתים.']],
+    G2: [['=E2/F2', 'השיפוע הוא Ymax חלקי Xmax: כמה y יורד על כל טון x.']],
+    C9: [['=MAX(F2:F3)', 'זה ה-Ymax הגבוה. הגורם שנגמר ראשון קובע, ולכן הנמוך.']],
+    B11: [['=MAX(E2:E3)', 'זה ה-Xmax הגבוה. הגורם שנגמר ראשון קובע, ולכן הנמוך.']],
+    C14: [['=B14', 'זה מה שבשימוש. לא מנוצל = הכמות פחות מה שבשימוש.']], C15: [['=B15', 'זה מה שבשימוש. לא מנוצל = הכמות פחות מה שבשימוש.']] };
+  const wf = t => t.replace(/(=[A-Z(][A-Z0-9:\/*+\-().]*)/g, '<span class="m">$1</span>');
+  steps.forEach(st => { st.note = wf(st.note); });
+  Object.values(traps).forEach(list => list.forEach(t => { t[1] = wf(t[1]); }));
+  return { traps, rows: 15, cols: 7, widths: [168, 82, 96, 92, 80, 80, 80], data, solution: sol, targets: Object.keys(sol), vin, values: true, headRows: [1, 5, 8, 13], steps, tools: false, tol: 0.011,
+    hints: ['התחילו בסידור הנתונים: שורה 2 שעות העבודה, שורה 3 שעות המכונה.', 'Xmax: הכמות חלקי מה שדורש טון ענבים. Ymax: חלקי מה שדורש טון זיתים.', 'בנקודת קצה הגורם שנגמר ראשון קובע: MIN.', 'בשימוש = מה שדורש כל מוצר כפול הכמות שלו, בסכום.'],
+    wrongMsg: 'התוצאה אינה נכונה. לחצו על ״הצעד הבא״ כדי לראות את ההסבר לשלב הזה', done: 'הטבלה נכונה, כולל האבטלה המבנית בשתי נקודות הקצה.' };
+}
+slide({
+  id: 'e2', kick: 'עכשיו אתם', kc: 'y', title: 'משק ״גלבוע״: אותה שאלה, בגיליון', steps: 0, tags: { ex: ['5.6'] },
+  build(root, ctx) {
+    const q = h('div.card.l3-q.lvq', h('div.l3-src', 'נסו לבד, בגיליון'), h('div', E2GB.story),
+      h('div', { style: 'margin-top:6px', html: '<b>נדרש:</b> בנו את טבלת הפתרון, את נקודת המפגש ואת נקודות העקומה. חשבו כמה שעות לא מנוצלות מכל גורם בנקודות הקצה. לוחצים ״הצעד הבא״ כדי לקבל שלב והסבר.' }));
+    if (ctx.static) {
+      root.appendChild(h('div.cols', q, h('div.stack', L2.tbl(['גורם', 'כמות', 'לענבים x', 'לזיתים y', 'Xmax', 'Ymax', 'שיפוע'], [['שעות עבודה', m(90), m(3), m(1), m(30), m(90), m(3)], ['שעות מכונה', m(80), m(2), m(4), m(40), m(20), m(0.5)]]),
+        L2.tbl(['נקודה', 'ענבים x', 'זיתים y'], [['A', m(0), m(20)], ['B', m(28), m(6)], ['C', m(30), m(0)]]),
+        L2.tbl(['אבטלה מבנית', 'בשימוש', 'לא מנוצל'], [['עבודה בנקודה A', m(20), m(70)], ['מכונות בנקודה C', m(60), m(20)]]))));
+      return;
+    }
+    const fbBox = h('div.lvfb');
+    const host = h('div.xlhost');
+    root.appendChild(h('div.e2c', { style: 'display:grid;grid-template-columns:minmax(0,.82fr) minmax(0,1.35fr);gap:16px;align-items:start' }, h('div.stack.l2-tight', q, fbBox), host));
+    const cfg = gbCfg();
+    cfg.onChange = () => { try { E2GB.raw = Object.assign({}, api.sheet.raw); if (host.dataset.solved === '1') E2GB.solved = true; } catch (e) { } };
+    const api = window.__XL.mount(host, cfg);
+    host.addEventListener('keydown', ev => ev.stopPropagation());
+    const fb = host.querySelector('.xl-fb'); if (fb) fbBox.appendChild(fb);
+    if (E2GB.raw) { const o = {}; cfg.targets.forEach(a => { if (E2GB.raw[a] != null) o[a] = E2GB.raw[a]; }); api.putMany(o); }
+    host.__api = api;
+  }
+});
+
+/* ===== lesson 5: summary of production factor constraints (sum5) and the multiple-choice set 5.22 to 5.31 (mcq5) ===== */
+(function () {
+  const st = document.createElement('style');
+  st.textContent = `
+  .s5g{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+  .s5c{border-radius:12px;padding:9px 11px;background:#fff;border:1px solid #dfe3ec;border-top:5px solid var(--c);font-size:14.5px;line-height:1.45;box-shadow:0 2px 6px rgba(0,0,0,.05)}
+  .s5c h4{margin:0 0 4px;font-size:16px;color:var(--c)}
+  .s5c .ex{margin-top:5px;background:#f6f7fb;border-radius:8px;padding:4px 7px;font-size:13.5px}
+  .m5g{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px 16px;font-size:15px;line-height:1.4}
+  .m5q{border-bottom:1px dashed #cfd5e2;padding:3px 0 5px}
+  .m5q .qn{font-weight:800;color:#1e2a4a;margin-left:6px}
+  .m5q ol{list-style:none;padding:0;margin:2px 0 0;display:flex;flex-wrap:wrap;gap:2px 14px}
+  .m5q ol li b{margin-left:3px}
+  .m5top{display:grid;grid-template-columns:minmax(0,1.35fr) minmax(0,1fr);gap:12px;align-items:start;margin-bottom:6px}
+  `;
+  document.head.appendChild(st);
+})();
+slide({
+  id: 'sum5', kick: 'סיכום', kc: 't', title: 'מגבלות של גורמי ייצור: כל הנושא בשקף אחד',
+  build(root, ctx) {
+    const C = [
+      ['#7c3aed', 'קו מגבלה של גורם אחד', 'כל הצירופים שמנצלים את הגורם עד הסוף. ' + m('Xmax = Q / a(x)') + ', ' + m('Ymax = Q / a(y)') + '. השיפוע: ' + m('Ymax / Xmax') + '.', 'קרקע 120, עגבנייה 4, מלפפון 2: ' + m('Xmax = 30') + ', ' + m('Ymax = 60') + ', שיפוע 2.'],
+      ['#d97706', 'שני גורמים: העקומה היא הקו הנמוך', 'כל גורם נותן קו. בכל נקודה מגביל הגורם שנגמר ראשון, ולכן העקומה הולכת על הקו הנמוך ונשברת היכן שהקווים נפגשים.', 'נקודות הקצה: ' + m('MIN(Ymax)') + ' על ציר y ו-' + m('MIN(Xmax)') + ' על ציר x.'],
+      ['#16a34a', 'נקודת המפגש', 'משווים בין משוואות הקווים ומוצאים x. מציבים אותו באחד הקווים ומקבלים y. בנקודה הזו שני הגורמים מנוצלים במלואם.', m('60 − 2x = 30 − 0.5x') + ' נותן ' + m('x = 20') + ', ' + m('y = 20') + '.'],
+      ['#2563eb', 'בדיקת צירוף', 'בודקים כל גורם בנפרד: כמה ממנו דורש הצירוף. אם גורם אחד לא מספיק, הצירוף בלתי אפשרי. אם כולם מספיקים ומכולם נשאר עודף, הוא אפשרי ולא יעיל.', m('(25, 15)') + ': קרקע ' + m('130 > 120') + ', בלתי אפשרי.'],
+      ['#be185d', 'עלות שולית', 'שיפוע הקו שמגביל באותו קטע. משמאל לנקודת המפגש קו אחד, ומימין לה הקו השני: העלות השולית עולה, והעקומה קעורה.', 'בנקודת השבר: ל-x הקטע שמשמאל, ל-y ההופכי של הקטע שמימין.'],
+      ['#0f766e', 'אבטלה מבנית', 'על העקומה, מלבד נקודת המפגש, גורם אחד מנוצל במלואו ומהשני נשאר עודף. גודלה: הכמות של הגורם פחות מה שבשימוש.', m('(10, 25)') + ': קרקע בשימוש ' + m('4 × 10 + 2 × 25 = 90') + ', עודף ' + m('30') + ' דונם.'],
+      ['#b45309', 'קווים מקבילים וגורם שאינו מגביל', 'קווים מקבילים: העקומה היא הקו הנמוך, ישרה, והעלות השולית קבועה. גורם שהקו שלו מעל כל הקווים לעולם אינו מגביל ותמיד באבטלה מבנית.', 'שלושה גורמים: העקומה היא הנמוך מבין שלושת הקווים.'],
+      ['#1e2a4a', 'מול בניית העקומה מעובדים', 'מעובדים: מסדרים לפי העלות השולית ומחברים קטע לכל עובד. מגורמי ייצור: משרטטים קו לכל גורם ולוקחים את הנמוך. בשתי הדרכים העקומה קעורה והעלות השולית עולה.', 'עובד = קטע. גורם ייצור = קו שלם.']];
+    const g = h('div.s5g');
+    C.forEach((c, i) => g.appendChild(rv(h('div.s5c', { style: '--c:' + c[0] }, h('h4', (i + 1) + '. ' + c[1]), h('div', { html: c[2] }), h('div.ex', { html: c[3] })), i + 1)));
+    root.appendChild(g);
+  }
+});
+slide({
+  id: 'mcq5', kick: 'תרגול עצמי ומטלה להגשה', kc: 'y', title: 'שאלות אמריקאיות 5.22 עד 5.31: לתרגול ולהגשה עד 01.12.2026', steps: 0,
+  build(root, ctx) {
+    if (typeof SUB5 === 'undefined' || !SUB5) { root.appendChild(h('div.card', 'השאלות יפורסמו בקובץ נפרד באתר הקורס.')); return; }
+    const S = SUB5;
+    root.appendChild(h('div.m5top',
+      h('div.card.l2-subm', { style: 'font-size:14.5px;line-height:1.45' }, h('b', '📮 להגשה עד ' + S.due + '. '), h('span', { html: 'ההגשה במודל בלבד, ורק בחלק העליון שלו, תחת הכותרת ״שי צבאן״. הגשה במקום אחר במודל תגיע רק למר שלומי כץ, ולא אליי. השאלות והפתרון המלא והמפורט נמצאים בקובץ נפרד באתר, ליד שיעור 5.' })),
+      h('div.card.l3-q', { style: 'font-size:14px;line-height:1.45' }, h('b', 'נגריית ״ארז״ (שאלות 5.22 עד 5.29). '), h('span', { html: S.story }))));
+    const g = h('div.m5g');
+    S.q.forEach(q => g.appendChild(h('div.m5q', h('div', h('span.qn', q.id), h('span', { html: q.stem })), h('ol', q.opts.map((o, i) => h('li', h('b', 'אבגדה'[i] + '.'), h('span', { html: o })))))));
+    root.appendChild(g);
+  }
+});
+
+/* ---- lesson 5 multiple-choice set (generated from the booklet source) ---- */
+const SUB5 = {"due": "01.12.2026", "story": "נגריית ״ארז״ מייצרת שולחנות (x) וכיסאות (y). לרשות הנגרייה 240 יחידות עץ ו-200 שעות עבודה. לייצור שולחן דרושות 6 יחידות עץ ו-2 שעות עבודה. לייצור כיסא דרושות 3 יחידות עץ ו-4 שעות עבודה.", "note": "שאלות 5.22 עד 5.29 עוסקות בנגריית ״ארז״. שאלות 5.30 ו-5.31 עומדות בפני עצמן.", "factors": [["עץ", 240, 6, 3], ["שעות עבודה", 200, 2, 4]], "q": [{"id": "5.22", "stem": "מהי הכמות הגדולה ביותר של שולחנות שהנגרייה יכולה לייצר?", "opts": ["<span class=\"m\">100</span>", "<span class=\"m\">40</span>", "<span class=\"m\">80</span>", "<span class=\"m\">50</span>", "<span class=\"m\">140</span>"]}, {"id": "5.23", "stem": "מהי נקודת המפגש של שני קווי המגבלה?", "opts": ["<span class=\"m\">(20, 40)</span>", "<span class=\"m\">(40, 0)</span>", "<span class=\"m\">(0, 50)</span>", "<span class=\"m\">(40, 20)</span>", "<span class=\"m\">(25, 30)</span>"]}, {"id": "5.24", "stem": "מהי העלות השולית של השולחן ה-10?", "opts": ["<span class=\"m\">2</span>", "<span class=\"m\">1.25</span>", "<span class=\"m\">4</span>", "<span class=\"m\">0.5</span>", "<span class=\"m\">3</span>"]}, {"id": "5.25", "stem": "מהי העלות השולית של השולחן ה-30?", "opts": ["<span class=\"m\">0.5</span>", "<span class=\"m\">1</span>", "<span class=\"m\">2</span>", "<span class=\"m\">1.25</span>", "<span class=\"m\">20</span>"]}, {"id": "5.26", "stem": "הנגרייה מייצרת ביעילות 30 שולחנות. כמה כיסאות היא מייצרת?", "opts": ["<span class=\"m\">35</span>", "<span class=\"m\">50</span>", "<span class=\"m\">30</span>", "<span class=\"m\">40</span>", "<span class=\"m\">20</span>"]}, {"id": "5.27", "stem": "הנגרייה מייצרת ביעילות כיסאות בלבד. כמה יחידות עץ לא מנוצלות?", "opts": ["<span class=\"m\">0</span>", "<span class=\"m\">90</span>", "<span class=\"m\">150</span>", "<span class=\"m\">240</span>", "<span class=\"m\">30</span>"]}, {"id": "5.28", "stem": "הנגרייה מייצרת ביעילות שולחנות בלבד. איזה גורם ייצור נמצא באבטלה מבנית, ובאיזה היקף?", "opts": ["עץ, 0 יחידות", "עץ, 120 יחידות", "שעות עבודה, 60 שעות", "שעות עבודה, 120 שעות", "אין אבטלה מבנית, כי הנגרייה על העקומה"]}, {"id": "5.29", "stem": "האם הנגרייה יכולה לייצר 30 שולחנות ו-25 כיסאות?", "opts": ["לא, כי העץ לא מספיק", "לא, כי שעות העבודה לא מספיקות", "כן, והצירוף יעיל", "כן, אבל הצירוף לא יעיל: שני הגורמים לא מנוצלים במלואם", "כן, ויש אבטלה מבנית בעץ"]}, {"id": "5.30", "stem": "משק מייצר x ו-y בעזרת שני גורמי ייצור. לפי גורם א׳: <span class=\"m\">Xmax = 20</span> ו-<span class=\"m\">Ymax = 40</span>. לפי גורם ב׳: <span class=\"m\">Xmax = 30</span> ו-<span class=\"m\">Ymax = 60</span>. איזו טענה נכונה?", "opts": ["העקומה שבורה בנקודה שבה שני הקווים נפגשים", "העקומה היא קו גורם ב׳, כי הוא הגבוה", "העלות השולית של x עולה לאורך העקומה", "בכל נקודה על העקומה שני הגורמים מנוצלים במלואם", "העקומה ישרה, העלות השולית של x קבועה ושווה 2, ובכל נקודה עליה נשאר עודף מגורם ב׳"]}, {"id": "5.31", "stem": "משק מייצר x ו-y בעזרת שלושה גורמי ייצור. לפי גורם א׳: <span class=\"m\">Xmax = 30</span> ו-<span class=\"m\">Ymax = 30</span>. לפי גורם ב׳: <span class=\"m\">Xmax = 50</span> ו-<span class=\"m\">Ymax = 20</span>. לפי גורם ג׳: <span class=\"m\">Xmax = 60</span> ו-<span class=\"m\">Ymax = 60</span>. איזה גורם לעולם אינו מגביל את הייצור?", "opts": ["גורם א׳", "גורם ב׳", "גורם ג׳", "אף אחד: כל גורם מגביל בקטע אחר של העקומה", "גורם ב׳ וגורם ג׳"]}]};
+
 /* ---- lesson 5 homework map: the lesson 5 chapter of the booklet (5.1 to 5.21) ---- */
 const BOOK5 = '../../materials/homework-lesson-5.pdf?v=20261118';
+const MCQ5 = '../../materials/lesson5-mcq.pdf?v=20261124';
 const EX5L = [
-  { id: '5.1', title: 'חזרה: בניית עקומה מעובדים ועלויות בין נקודות', s: [], note: 'חזרה על שיעור 4 (במצגת של שיעור 4)' },
+  { id: '5.1', title: 'חזרה: בניית עקומה מעובדים ועלויות בין נקודות', s: ['d0'] },
   { id: '5.2', title: 'גורם ייצור אחד: קו המגבלה', s: ['g1'] },
   { id: '5.3', title: 'שני גורמי ייצור: בניית העקומה', s: ['g2', 'g3', 'g4', 'g5', 'g6', 'g7'] },
-  { id: '5.4', title: 'נקודות ביחס לעקומה: יעילות ואבטלה', s: ['g2', 'g7'], note: 'האבטלה תילמד בהמשך' },
-  { id: '5.5', title: 'עלות שולית לפי קו המגבלה', s: ['g3', 'g5'] },
-  { id: '5.6', title: 'כמו בשיעורי הבית: אבטלה מבנית וגודלה', s: [], note: 'יילמד בהמשך' },
-  { id: '5.7', title: 'שלושה גורמי ייצור', s: [], note: 'יילמד בהמשך' },
-  { id: '5.8', title: 'קווי מגבלה מקבילים', s: [], note: 'יילמד בהמשך' },
-  { id: '5.9', title: 'תרגיל מסכם: עקומה, עלויות ואבטלה', s: ['g5'], note: 'האבטלה תילמד בהמשך' },
-  { id: '5.10 עד 5.13', title: 'שאלות אמריקאיות א׳: קווי מגבלה', s: ['g1', 'g3', 'g4', 'g5'] },
-  { id: '5.14 עד 5.17', title: 'שאלות אמריקאיות ב׳: מיקום, עלות שולית ואבטלה', s: ['g2', 'g7'], note: 'האבטלה תילמד בהמשך' },
-  { id: '5.18 עד 5.21', title: 'שאלות אמריקאיות ג׳: סיכום וחזרה', s: [], note: 'יילמד בהמשך' }
+  { id: '5.4', title: 'נקודות ביחס לעקומה: יעילות ואבטלה', s: ['g2', 'u3'] },
+  { id: '5.5', title: 'עלות שולית לפי קו המגבלה', s: ['m1', 'g3'] },
+  { id: '5.6', title: 'כמו בשיעורי הבית: אבטלה מבנית וגודלה', s: ['u1', 'u2', 'e1'] },
+  { id: '5.7', title: 'שלושה גורמי ייצור', s: ['m2', 'm4'] },
+  { id: '5.8', title: 'קווי מגבלה מקבילים', s: ['m3'] },
+  { id: '5.9', title: 'תרגיל מסכם: עקומה, עלויות ואבטלה', s: ['e1', 'e2'] },
+  { id: '5.10 עד 5.13', title: 'שאלות אמריקאיות א׳: קווי מגבלה', s: ['g1', 'g3', 'g4', 'm1'] },
+  { id: '5.14 עד 5.17', title: 'שאלות אמריקאיות ב׳: מיקום, עלות שולית ואבטלה', s: ['u1', 'u3', 'm1'] },
+  { id: '5.18 עד 5.21', title: 'שאלות אמריקאיות ג׳: סיכום וחזרה', s: ['m2', 'm3', 'e1'] }
 ];
 slide({
   id: 'hwmap', kick: 'שיעורי הבית', kc: 'y', title: 'שיעורי הבית של שיעור 5: איפה מסבירים כל תרגיל', steps: 0,
@@ -2558,8 +3423,9 @@ slide({
   build(root, ctx) {
     const slides = Deck.slides; const num = id => slides.findIndex(d => d.id === id) + 1;
     const chips = ids => h('div', { style: 'display:flex;flex-wrap:wrap;gap:5px' }, ids.map(sid => { const d = slides.find(z => z.id === sid); if (!d) return null; return ctx.static ? h('span.chip', 'שקף ' + num(sid)) : h('a.chip', { href: '#' + sid, title: d.title, onclick: ev => { ev.preventDefault(); Deck.go(sid); } }, num(sid) + '. ' + d.title); }));
-    root.appendChild(h('div.card.l2-subm', h('h3', { style: 'margin:0 0 4px' }, '📘 קובץ שיעורי הבית של שיעור 5: תרגילים 5.1 עד 5.21'),
-      h('div', { html: 'הקובץ כולל רק את התרגילים של שיעור 5, עם פתרון מלא ומפורט לכל תרגיל. בשיעור הזה אין מטלה להגשה. תזכורת: המטלה של שיעור 4 (שאלות 4.21 עד 4.30) להגשה עד ' + m('24.11.2026') + ', במודל בלבד, בחלק העליון שלו, תחת הכותרת ״שי צבאן״.' })));
+    root.appendChild(h('div.card.l2-subm', h('h3', { style: 'margin:0 0 4px' }, '📮 להגשה עד 01.12.2026: עשר שאלות אמריקאיות, 5.22 עד 5.31'),
+      h('div', { html: 'השאלות מופיעות בשקף הקודם ובקובץ נפרד באתר, ליד שיעור 5, עם פתרון מלא ומפורט. <b>ההגשה במודל בלבד, ורק בחלק העליון שלו, תחת הכותרת ״שי צבאן״.</b> הגשה במקום אחר במודל תגיע רק למר שלומי כץ, ולא אליי. תרגילים 5.1 עד 5.21 בקובץ שיעורי הבית לתרגול עצמי, גם הם עם פתרון מלא.' }),
+      ctx.static ? null : h('div', { style: 'margin-top:6px;display:flex;gap:8px;flex-wrap:wrap' }, h('a.btn', { href: MCQ5, target: '_blank', rel: 'noopener' }, 'השאלות להגשה עם הפתרונות (PDF)'), h('a.btn', { href: BOOK5, target: '_blank', rel: 'noopener' }, 'תרגילים 5.1 עד 5.21 עם הפתרונות (PDF)'))));
     if (ctx.static) {
       root.appendChild(h('div', { style: 'margin-top:8px' }, table(['תרגיל', 'נושא', 'שקפים'], EX5L.map(e => [h('b', e.id), e.title, e.s.length ? 'שקף ' + e.s.filter(num).map(num).join(', ') + (e.note ? ' (' + e.note + ')' : '') : e.note]))));
       return;
@@ -2573,7 +3439,7 @@ slide({
 
 /* lesson 5 keeps only its own slides; the lesson 4 files are loaded for their helpers (stageSlide, conEco, conDraw) */
 (function () {
-  const KEEP = ['cover', 'g1', 'g2', 'g3', 'g4', 'g5', 'g6', 'g7', 'hwmap'];
+  const KEEP = ['cover', 'd0', 'g1', 'g2', 'g3', 'g4', 'g5', 'g6', 'g7', 'u1', 'u2', 'u3', 'm1', 'm2', 'm3', 'm4', 'e1', 'e2', 'sum5', 'mcq5', 'hwmap'];
   const S = Deck.slides;
   for (let i = S.length - 1; i >= 0; i--) if (!KEEP.includes(S[i].id)) S.splice(i, 1);
   S.sort((a, b) => KEEP.indexOf(a.id) - KEEP.indexOf(b.id));
